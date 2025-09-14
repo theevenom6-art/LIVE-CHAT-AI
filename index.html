@@ -294,6 +294,388 @@ window.addEventListener('load', () => {
   const savedMessages = JSON.parse(localStorage.getItem('chatHistory') || '[]');
   savedMessages.forEach(msg => appendMessage(msg.startsWith('🤖') ? 'bot' : 'user', msg));
 });
+  </script>
+    <script>
+/* ===== Session 6: AI Typing Indicator & Role Switching ===== */
+
+let isTyping = false;
+
+// Show typing indicator
+function showTypingIndicator() {
+  if (isTyping) return;
+  isTyping = true;
+
+  const typingDiv = document.createElement("div");
+  typingDiv.id = "typingIndicator";
+  typingDiv.innerText = "🤖 AI is typing...";
+  typingDiv.style.fontStyle = "italic";
+  typingDiv.style.color = "#aaa";
+  typingDiv.style.margin = "10px 0";
+  chatBox.appendChild(typingDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Remove typing indicator
+function removeTypingIndicator() {
+  const typingDiv = document.getElementById("typingIndicator");
+  if (typingDiv) {
+    chatBox.removeChild(typingDiv);
+  }
+  isTyping = false;
+}
+
+// Override aiReplyAPI to include typing effect
+async function aiReplyAPI(message) {
+  showTypingIndicator();
+
+  // Simulate delay
+  await new Promise(r => setTimeout(r, 1000));
+
+  removeTypingIndicator();
+
+  if (characterRole) {
+    return `🤖 [${characterRole} says]: ${message.split('').reverse().join('')}`;
+  } else {
+    return `🤖 [AI Response placeholder]`;
+  }
+}
+
+// Optional: switch role dynamically
+function switchRole(newRole) {
+  characterRole = newRole;
+  localStorage.setItem('characterRole', characterRole);
+  document.getElementById("activeRole").innerText = "✅ Character set to: " + characterRole;
+}
+  </script>
+<script>
+/* ===== Session 7: Timestamps, Role Responses & Clear Chat ===== */
+
+// Add timestamp to a message
+function appendMessage(sender, text) {
+  const div = document.createElement("div");
+  div.style.margin = "10px 0";
+  div.style.padding = "10px";
+  div.style.borderRadius = "8px";
+  div.style.maxWidth = "70%";
+  div.style.lineHeight = "1.4em";
+  div.style.position = "relative";
+
+  const timeSpan = document.createElement("span");
+  const now = new Date();
+  timeSpan.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  timeSpan.style.fontSize = "10px";
+  timeSpan.style.position = "absolute";
+  timeSpan.style.bottom = "2px";
+  timeSpan.style.right = "10px";
+  timeSpan.style.color = "#aaa";
+
+  if (sender === "user") {
+    div.style.background = "#2d89ef";
+    div.style.marginLeft = "auto";
+    div.style.textAlign = "right";
+  } else {
+    div.style.background = "#333";
+    div.style.marginRight = "auto";
+  }
+
+  div.innerText = text;
+  div.appendChild(timeSpan);
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Clear chat
+function clearChat() {
+  chatBox.innerHTML = "";
+  localStorage.removeItem('chatHistory');
+}
+
+// Optional: custom response per role
+async function aiReplyAPI(message) {
+  showTypingIndicator();
+  await new Promise(r => setTimeout(r, 1000));
+  removeTypingIndicator();
+
+  let response;
+  if (characterRole) {
+    switch (characterRole.toLowerCase()) {
+      case "joker":
+        response = `🤡 [${characterRole} laughs]: ${message.split('').reverse().join('')}`;
+        break;
+      case "sherlock":
+        response = `🕵️‍♂️ [${characterRole} deduces]: ${message.split('').join('-')}`;
+        break;
+      default:
+        response = `🤖 [${characterRole} says]: ${message.split('').reverse().join('')}`;
+    }
+  } else {
+    response = `🤖 [AI Response placeholder]`;
+  }
+
+  return response;
+}
+  </script>
+<script>
+/* ===== Session 8: Multi-Session Chat & Enhanced Typing ===== */
+
+let chatSessions = {}; // store multiple chats
+let currentSession = 'default';
+
+// Initialize default session
+if (!chatSessions[currentSession]) chatSessions[currentSession] = [];
+
+// Save messages to session
+function saveMessageToSession(sender, text) {
+  if (!chatSessions[currentSession]) chatSessions[currentSession] = [];
+  chatSessions[currentSession].push({ sender, text, time: new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) });
+  localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
+}
+
+// Load messages for current session
+function loadSession(sessionName) {
+  currentSession = sessionName;
+  chatBox.innerHTML = "";
+  chatSessions[currentSession] = chatSessions[currentSession] || [];
+  chatSessions[currentSession].forEach(msg => appendMessage(msg.sender, msg.text));
+}
+
+// Override appendMessage to save to session
+const oldAppendMessage = appendMessage;
+appendMessage = function(sender, text) {
+  oldAppendMessage(sender, text);
+  saveMessageToSession(sender, text);
+};
+
+// Enhanced typing indicator (animated dots)
+function showTypingIndicator() {
+  if (isTyping) return;
+  isTyping = true;
+
+  const typingDiv = document.createElement("div");
+  typingDiv.id = "typingIndicator";
+  typingDiv.style.fontStyle = "italic";
+  typingDiv.style.color = "#aaa";
+  typingDiv.style.margin = "10px 0";
+
+  let dots = "";
+  const interval = setInterval(() => {
+    dots = dots.length < 3 ? dots + "." : "";
+    typingDiv.innerText = `🤖 AI is typing${dots}`;
+  }, 500);
+
+  chatBox.appendChild(typingDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  typingDiv.dataset.interval = interval;
+}
+
+// Remove typing indicator
+function removeTypingIndicator() {
+  const typingDiv = document.getElementById("typingIndicator");
+  if (typingDiv) {
+    clearInterval(typingDiv.dataset.interval);
+    chatBox.removeChild(typingDiv);
+  }
+  isTyping = false;
+}
+</script>
+  <script>
+/* ===== Session 9: Message Animations & Emoji Input ===== */
+
+// Animate message appearance
+const oldAppendMessage2 = appendMessage;
+appendMessage = function(sender, text) {
+  const div = document.createElement("div");
+  div.style.margin = "10px 0";
+  div.style.padding = "10px";
+  div.style.borderRadius = "8px";
+  div.style.maxWidth = "70%";
+  div.style.lineHeight = "1.4em";
+  div.style.opacity = 0;
+  div.style.transition = "opacity 0.5s ease, transform 0.3s ease";
+  div.style.transform = "translateY(10px)";
+
+  const timeSpan = document.createElement("span");
+  const now = new Date();
+  timeSpan.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  timeSpan.style.fontSize = "10px";
+  timeSpan.style.position = "absolute";
+  timeSpan.style.bottom = "2px";
+  timeSpan.style.right = "10px";
+  timeSpan.style.color = "#aaa";
+
+  if (sender === "user") {
+    div.style.background = "#2d89ef";
+    div.style.marginLeft = "auto";
+    div.style.textAlign = "right";
+  } else {
+    div.style.background = "#333";
+    div.style.marginRight = "auto";
+  }
+
+  div.innerText = text;
+  div.appendChild(timeSpan);
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // Animate in
+  requestAnimationFrame(() => {
+    div.style.opacity = 1;
+    div.style.transform = "translateY(0)";
+  });
+
+  // Save to session
+  saveMessageToSession(sender, text);
+
+  // Play sound for bot
+  if (sender === "bot") {
+    const audio = new Audio('https://www.myinstants.com/media/sounds/notification.mp3');
+    audio.play().catch(() => {});
+  }
+};
+
+// Emoji buttons example
+const emojiBar = document.createElement("div");
+emojiBar.style.display = "flex";
+emojiBar.style.padding = "5px 10px";
+emojiBar.style.gap = "5px";
+["😀","😂","😎","🤖","🎭"].forEach(emoji => {
+  const btn = document.createElement("button");
+  btn.innerText = emoji;
+  btn.style.padding = "5px 10px";
+  btn.style.border = "none";
+  btn.style.borderRadius = "5px";
+  btn.style.cursor = "pointer";
+  btn.onclick = () => input.value += emoji;
+  emojiBar.appendChild(btn);
+});
+document.getElementById("inputBar").prepend(emojiBar);
+</script>
+  <script>
+/* ===== Session 10: Role Presets & Persistent Chat Sessions ===== */
+
+let rolePresets = JSON.parse(localStorage.getItem('rolePresets') || '{}');
+
+// Save a new role preset
+function saveRolePreset(name) {
+  if (!characterRole) return alert("Set a character role first!");
+  rolePresets[name] = characterRole;
+  localStorage.setItem('rolePresets', JSON.stringify(rolePresets));
+  alert(`✅ Role preset "${name}" saved!`);
+}
+
+// Load a role preset
+function loadRolePreset(name) {
+  if (rolePresets[name]) {
+    switchRole(rolePresets[name]);
+    alert(`✅ Loaded role preset "${name}"`);
+  }
+}
+
+// Save chat history to localStorage
+function saveAllSessions() {
+  localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
+}
+
+// Load chat history on page load
+window.addEventListener('load', () => {
+  const savedSessions = JSON.parse(localStorage.getItem('chatSessions') || '{}');
+  chatSessions = savedSessions;
+  if (!chatSessions[currentSession]) chatSessions[currentSession] = [];
+  loadSession(currentSession);
+});
+</script>
+  <script>
+/* ===== Session 11: Quick Replies & UI Enhancements ===== */
+
+// Quick-reply container
+const quickReplyBar = document.createElement("div");
+quickReplyBar.id = "quickReplyBar";
+quickReplyBar.style.display = "flex";
+quickReplyBar.style.gap = "5px";
+quickReplyBar.style.padding = "5px 10px";
+document.getElementById("inputBar").prepend(quickReplyBar);
+
+// Generate quick replies
+function showQuickReplies(replies = []) {
+  quickReplyBar.innerHTML = "";
+  replies.forEach(text => {
+    const btn = document.createElement("button");
+    btn.innerText = text;
+    btn.style.padding = "5px 10px";
+    btn.style.border = "none";
+    btn.style.borderRadius = "5px";
+    btn.style.cursor = "pointer";
+    btn.style.transition = "transform 0.2s";
+    btn.onmouseenter = () => btn.style.transform = "scale(1.1)";
+    btn.onmouseleave = () => btn.style.transform = "scale(1)";
+    btn.onclick = () => {
+      input.value = text;
+      sendMessage();
+      quickReplyBar.innerHTML = "";
+    };
+    quickReplyBar.appendChild(btn);
+  });
+}
+
+// Smooth scroll to latest
+function scrollToBottom() {
+  chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
+}
+
+// Override appendMessage to scroll
+const oldAppendMessage3 = appendMessage;
+appendMessage = function(sender, text) {
+  oldAppendMessage3(sender, text);
+  scrollToBottom();
+};
+</script>
+  <script>
+/* ===== Session 12: Dynamic AI Response Timing & Role Styles ===== */
+
+// Override aiReplyAPI for dynamic delays
+async function aiReplyAPI(message) {
+  showTypingIndicator();
+
+  // Dynamic delay: 300ms per 5 characters, min 700ms, max 2500ms
+  const delay = Math.min(Math.max(700, (message.length / 5) * 300), 2500);
+  await new Promise(r => setTimeout(r, delay));
+
+  removeTypingIndicator();
+
+  let response;
+  if (characterRole) {
+    switch (characterRole.toLowerCase()) {
+      case "joker":
+        response = `🤡 [${characterRole} laughs]: ${message.split('').reverse().join('')} 😈`;
+        break;
+      case "sherlock":
+        response = `🕵️‍♂️ [${characterRole} deduces]: ${message.split(' ').join('-')}`;
+        break;
+      case "venom":
+        response = `🕷️ [${characterRole} hisses]: ${message.toUpperCase()} ⚡`;
+        break;
+      default:
+        response = `🤖 [${characterRole} says]: ${message}`;
+    }
+  } else {
+    response = `🤖 [AI placeholder]: ${message}`;
+  }
+
+  return response;
+}
+
+// Optional: simulate small bounce animation for AI messages
+const oldAppendMessage4 = appendMessage;
+appendMessage = function(sender, text) {
+  oldAppendMessage4(sender, text);
+
+  if (sender === "bot") {
+    const lastMsg = chatBox.lastChild;
+    lastMsg.style.transform = "scale(0.95)";
+    setTimeout(() => lastMsg.style.transform = "scale(1)", 200);
+  }
+};
 </script>
 </body>
 </html>
