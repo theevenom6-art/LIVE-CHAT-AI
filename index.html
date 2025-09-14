@@ -1102,15 +1102,16 @@ setRole = function() {
 
 // Initial render
 renderQuickReplies();
-</script><script>
-/* ===== Session 20: AI Memory & Context Tracking (Live GPT API) ===== */
+</script>
+  <script>
+/* ===== Session 20: AI Memory & GPT-4o API Integration ===== */
 
 const MAX_MEMORY = 50; // Max messages to remember per session
 
 async function aiReplyAPI(message) {
   showTypingIndicator();
 
-  // Include context messages for AI memory
+  // Include context messages for AI memory (optional)
   const context = chatSessions[currentSession]
     .slice(-MAX_MEMORY)
     .map(msg => `${msg.sender === "user" ? "User" : characterRole || "AI"}: ${msg.text}`)
@@ -1128,17 +1129,24 @@ async function aiReplyAPI(message) {
 
   await new Promise(r => setTimeout(r, baseDelay));
 
-  // ----- GPT/OpenAI API Call -----
-  const responseFetch = await fetch("https://api.giftedtech.co.ke/api/download/instadl?apikey=gifted&q=" + encodeURIComponent(message));
-  const data = await responseFetch.json();
-  let response = data.reply || "[AI failed to respond]";
+  // ----- GPT-4o API Call -----
+  const apiUrl = `https://api.giftedtech.web.id/api/ai/gpt4o?apikey=gifted&q=${encodeURIComponent(message)}`;
+  let responseText = "[AI failed to respond]";
+
+  try {
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+    responseText = data.reply || "[AI failed to respond]";
+  } catch (err) {
+    console.error("Error fetching AI response:", err);
+  }
   // -------------------------------
 
   removeTypingIndicator();
-  return response;
+  return responseText;
 }
 
-// Ensure sendMessage uses updated aiReplyAPI
+// Override sendMessage to use GPT-4o API
 const oldSendMessage20 = sendMessage;
 sendMessage = async function() {
   const text = input.value.trim();
