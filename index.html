@@ -528,10 +528,10 @@ appendMessage = function(sender, text) {
   saveMessageToSession(sender, text);
 
   // Play sound for bot
-  if (sender === "bot") {
-    const audio = new Audio('https://www.myinstants.com/media/sounds/notification.mp3');
-    audio.play().catch(() => {});
-  }
+  if (sender === "bot" && text.includes("😂")) {
+  const audio = new Audio('https://www.myinstants.com/media/sounds/funny-laugh.mp3');
+  audio.play().catch(() => {});
+}
 };
 
 // Emoji buttons example
