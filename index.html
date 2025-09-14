@@ -100,6 +100,7 @@
 <div id="inputBar">
   <input type="text" id="userInput" placeholder="Type your message..."/>
   <button id="sendBtn">Send</button>
+  <button id="micBtn">🎤 Speak</button>
 </div>
 
 <script>
@@ -180,6 +181,370 @@ playTestBtn.addEventListener('click', async () => {
     alert('Failed to play voice.');
   }
 });
+  // === Session 3: Bot Replies with ElevenLabs TTS ===
+
+// Function to send TTS to ElevenLabs
+async function speakBotMessage(text, voice = 'alloy') {
+  try {
+    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voice, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': ELEVEN_KEY
+      },
+      body: JSON.stringify({ text })
+    });
+
+    const blob = await res.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    audio.play();
+  } catch (err) {
+    console.error('TTS failed:', err);
+  }
+}
+
+// Modify appendMessage to speak bot messages automatically
+const originalAppendMessage = appendMessage;
+appendMessage = function(sender, text) {
+  originalAppendMessage(sender, text);
+  if (sender === 'bot') {
+    // Get currently selected voice
+    const selectedVoice = characterSelect.value || 'alloy';
+    speakBotMessage(text, selectedVoice);
+  }
+};
+  // === Session 4: Voice Input with Web Speech API ===
+const micBtn = document.getElementById('micBtn');
+let recognition;
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+
+  micBtn.addEventListener('click', () => {
+    recognition.start();
+  });
+
+  recognition.addEventListener('result', (event) => {
+    const transcript = event.results[0][0].transcript;
+    input.value = transcript;
+    sendBtn.click(); // Automatically send after speech
+  });
+
+  recognition.addEventListener('error', (event) => {
+    console.error('Speech recognition error:', event.error);
+    alert('Voice input failed. Please try again.');
+  });
+} else {
+  micBtn.disabled = true;
+  micBtn.innerText = '🎤 Not Supported';
+}
+  // === Session 5: Bot Replies via ElevenLabs TTS API ===
+
+// Function to send text to ElevenLabs TTS and play audio
+async function speakBotMessageLive(text, voice = 'alloy') {
+  try {
+    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voice, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': ELEVEN_KEY
+      },
+      body: JSON.stringify({ text })
+    });
+
+    if (!res.ok) throw new Error('TTS API error');
+
+    const blob = await res.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    audio.play();
+  } catch (err) {
+    console.error('TTS live playback failed:', err);
+  }
+}
+
+// Override appendMessage to auto-play bot TTS
+const originalAppendMessage5 = appendMessage;
+appendMessage = function(sender, text) {
+  originalAppendMessage5(sender, text);
+  if (sender === 'bot') {
+    const selectedVoice = characterSelect.value || 'alloy';
+    speakBotMessageLive(text, selectedVoice);
+  }
+};
+
+// Optional: Example bot reply generator
+async function generateBotReply(userMessage) {
+  // For now, simple echo + prefix
+  return `Hello! You said: "${userMessage}"`;
+}
+
+// Hook send button to generate bot reply via ElevenLabs
+sendBtn.addEventListener('click', async () => {
+  const text = input.value.trim();
+  if (!text) return;
+  appendMessage('user', text);
+  input.value = '';
+
+  const botReply = await generateBotReply(text);
+  appendMessage('bot', botReply);
+});
+  // === Session 6: Voice Input ===
+const micBtn = document.getElementById('micBtn');
+
+let recognition;
+if ('webkitSpeechRecognition' in window) {
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous = false;
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+
+  recognition.onresult = async (event) => {
+    const transcript = event.results[0][0].transcript;
+    appendMessage('user', transcript);
+    const botReply = await generateBotReply(transcript);
+    appendMessage('bot', botReply);
+  };
+
+  recognition.onerror = (event) => {
+    console.error('Speech recognition error:', event.error);
+    alert('Voice input failed: ' + event.error);
+  };
+} else {
+  micBtn.disabled = true;
+  micBtn.title = "Voice input not supported in this browser";
+}
+
+micBtn.addEventListener('click', () => {
+  if (!recognition) return;
+  recognition.start();
+});
+  // === Session 7: Dynamic Voice Selection for Bot Replies ===
+
+// Make sure selected voice updates instantly for TTS
+characterSelect.addEventListener('change', () => {
+  const selectedVoice = characterSelect.value;
+  console.log('Selected voice:', selectedVoice);
+  // Optional: Play short voice preview on selection
+  speakBotMessage(`You have selected ${selectedVoice} as your voice!`, selectedVoice);
+});
+
+// Function to generate bot reply
+async function generateBotReply(userText) {
+  // Placeholder: Here you can integrate your ElevenLabs AI backend or OpenAI for response
+  const botText = `🤖 Echoing your message: "${userText}"`;
+  return botText;
+}
+
+// Ensure appendMessage automatically speaks with the selected voice
+const prevAppend = appendMessage;
+appendMessage = function(sender, text) {
+  prevAppend(sender, text);
+  if(sender === 'bot') {
+    const selectedVoice = characterSelect.value || 'alloy';
+    speakBotMessage(text, selectedVoice);
+  }
+};
+  // === Session 8: Chat History Management ===
+
+const historyTab = document.querySelector('[data-tab="history"]');
+const historyContainer = document.getElementById('historyContainer');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+// Load history from localStorage
+function loadHistory() {
+  historyContainer.innerHTML = '';
+  const savedHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+  savedHistory.forEach(msg => {
+    const div = document.createElement('div');
+    div.classList.add('message', msg.sender);
+    div.innerText = msg.text;
+    historyContainer.appendChild(div);
+  });
+}
+
+// Save a message to localStorage
+function saveMessage(sender, text) {
+  const savedHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+  savedHistory.push({ sender, text });
+  localStorage.setItem('chatHistory', JSON.stringify(savedHistory));
+}
+
+// Override appendMessage to save messages automatically
+const prevAppend2 = appendMessage;
+appendMessage = function(sender, text) {
+  prevAppend2(sender, text);
+  saveMessage(sender, text);
+  if(sender === 'bot') {
+    const selectedVoice = characterSelect.value || 'alloy';
+    speakBotMessage(text, selectedVoice);
+  }
+};
+
+// Show history when tab clicked
+historyTab.addEventListener('click', () => {
+  historyContainer.innerHTML = '';
+  loadHistory();
+  // Optional: Hide other tabs if needed
+  console.log('Switched to History tab');
+});
+
+// Clear history
+clearHistoryBtn.addEventListener('click', () => {
+  localStorage.removeItem('chatHistory');
+  historyContainer.innerHTML = '';
+});
+</script>
+  <!-- === Session 9: Voice Reply Enhancements (ElevenLabs) === -->
+<script>
+  // Ensure TTS is played for every bot message automatically
+  const prevAppend3 = appendMessage;
+  appendMessage = function(sender, text) {
+    prevAppend3(sender, text);
+    if(sender === 'bot') {
+      const selectedVoice = characterSelect.value || 'alloy';
+      speakBotMessage(text, selectedVoice);
+    }
+  };
+
+  // Optional: Test ElevenLabs voice instantly
+  const voiceTab = document.querySelector('[data-tab="voice"]');
+  const playTestBtn = document.getElementById('playTestBtn');
+
+  playTestBtn.addEventListener('click', async () => {
+    const selectedVoice = characterSelect.value;
+    const sampleText = `Hello! This is a test voice for ${selectedVoice}.`;
+    try {
+      const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + selectedVoice, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': ELEVEN_KEY
+        },
+        body: JSON.stringify({ text: sampleText })
+      });
+      const blob = await res.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    } catch(err) {
+      console.error('TTS test failed:', err);
+      alert('Failed to play voice.');
+    }
+  });
+</script>
+  <!-- === Session 10: Dynamic Character Switching & Live Voice Preview === -->
+<script>
+  const voiceDropdown = document.getElementById('characterSelect');
+
+  // Update bot voice dynamically when selection changes
+  voiceDropdown.addEventListener('change', () => {
+    const selectedVoice = voiceDropdown.value;
+    console.log('Voice switched to:', selectedVoice);
+
+    // Optional: Play a small greeting whenever you switch
+    const greeting = `Voice switched to ${selectedVoice}. Hello!`;
+    speakBotMessage(greeting, selectedVoice);
+  });
+
+  // Function to handle live voice test from input
+  const liveTestBtn = document.createElement('button');
+  liveTestBtn.innerText = '🎤 Test Input Voice';
+  liveTestBtn.style.marginLeft = '10px';
+  document.getElementById('inputBar').appendChild(liveTestBtn);
+
+  liveTestBtn.addEventListener('click', async () => {
+    const text = input.value.trim();
+    if (!text) return;
+
+    const selectedVoice = voiceDropdown.value || 'alloy';
+    try {
+      const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + selectedVoice, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': ELEVEN_KEY
+        },
+        body: JSON.stringify({ text })
+      });
+
+      const blob = await res.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    } catch (err) {
+      console.error('Live test failed:', err);
+      alert('Failed to play live voice.');
+    }
+  });
+
+  console.log('Session 10: Dynamic Character Switching & Live Voice Preview loaded.');
+</script>
+  <!-- === Session 11: Voice History & Quick Replay === -->
+<script>
+  // Create voice history container
+  const voiceHistoryContainer = document.createElement('div');
+  voiceHistoryContainer.style.position = 'fixed';
+  voiceHistoryContainer.style.bottom = '70px';
+  voiceHistoryContainer.style.right = '20px';
+  voiceHistoryContainer.style.background = '#111';
+  voiceHistoryContainer.style.padding = '10px';
+  voiceHistoryContainer.style.borderRadius = '12px';
+  voiceHistoryContainer.style.maxHeight = '200px';
+  voiceHistoryContainer.style.overflowY = 'auto';
+  voiceHistoryContainer.style.display = 'none';
+  document.body.appendChild(voiceHistoryContainer);
+
+  const voiceHistoryBtn = document.createElement('button');
+  voiceHistoryBtn.innerText = '🕘 Voice History';
+  voiceHistoryBtn.style.position = 'fixed';
+  voiceHistoryBtn.style.bottom = '20px';
+  voiceHistoryBtn.style.right = '20px';
+  voiceHistoryBtn.style.background = 'var(--user-color)';
+  voiceHistoryBtn.style.color = '#fff';
+  voiceHistoryBtn.style.border = 'none';
+  voiceHistoryBtn.style.padding = '10px';
+  voiceHistoryBtn.style.borderRadius = '12px';
+  voiceHistoryBtn.style.cursor = 'pointer';
+  document.body.appendChild(voiceHistoryBtn);
+
+  const lastBotMessages = [];
+
+  // Update appendMessage to store last 5 bot messages for replay
+  const prevAppend3 = appendMessage;
+  appendMessage = function(sender, text) {
+    prevAppend3(sender, text);
+    if(sender === 'bot') {
+      lastBotMessages.push({ text, voice: characterSelect.value || 'alloy' });
+      if(lastBotMessages.length > 5) lastBotMessages.shift();
+
+      // Update voice history container
+      voiceHistoryContainer.innerHTML = '';
+      lastBotMessages.forEach((msg, i) => {
+        const btn = document.createElement('button');
+        btn.innerText = `Replay ${i+1}`;
+        btn.style.margin = '5px';
+        btn.style.padding = '5px 10px';
+        btn.style.borderRadius = '8px';
+        btn.style.border = 'none';
+        btn.style.background = 'var(--hover-color)';
+        btn.style.color = '#fff';
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', () => speakBotMessage(msg.text, msg.voice));
+        voiceHistoryContainer.appendChild(btn);
+      });
+    }
+  };
+
+  voiceHistoryBtn.addEventListener('click', () => {
+    voiceHistoryContainer.style.display = voiceHistoryContainer.style.display === 'none' ? 'block' : 'none';
+  });
+
+  console.log('Session 11: Voice History & Quick Replay loaded.');
 </script>
 </body>
 </html>
