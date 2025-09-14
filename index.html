@@ -1102,22 +1102,21 @@ setRole = function() {
 
 // Initial render
 renderQuickReplies();
-</script>
-  <script>
-/* ===== Session 20: AI Memory & Context Tracking ===== */
+</script><script>
+/* ===== Session 20: AI Memory & Context Tracking (Live GPT API) ===== */
 
 const MAX_MEMORY = 50; // Max messages to remember per session
 
 async function aiReplyAPI(message) {
   showTypingIndicator();
 
-  // Include context messages
+  // Include context messages for AI memory
   const context = chatSessions[currentSession]
     .slice(-MAX_MEMORY)
     .map(msg => `${msg.sender === "user" ? "User" : characterRole || "AI"}: ${msg.text}`)
     .join("\n");
 
-  // Simulate delay based on message length
+  // Simulate delay based on message length and role
   let baseDelay = Math.min(Math.max(700, (message.length / 5) * 300), 2500);
   if (characterRole) {
     switch (characterRole.toLowerCase()) {
@@ -1128,16 +1127,14 @@ async function aiReplyAPI(message) {
   }
 
   await new Promise(r => setTimeout(r, baseDelay));
+
+  // ----- GPT/OpenAI API Call -----
+  const responseFetch = await fetch("https://api.giftedtech.co.ke/api/download/instadl?apikey=gifted&q=" + encodeURIComponent(message));
+  const data = await responseFetch.json();
+  let response = data.reply || "[AI failed to respond]";
+  // -------------------------------
+
   removeTypingIndicator();
-
-  // Placeholder AI logic using context
-  let response;
-  if (characterRole) {
-    response = `🤖 [${characterRole} remembers]: ` + message.split('').reverse().join('');
-  } else {
-    response = `🤖 [AI Response with context]: ${message}`;
-  }
-
   return response;
 }
 
