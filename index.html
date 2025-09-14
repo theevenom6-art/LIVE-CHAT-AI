@@ -1401,5 +1401,97 @@ function removeTypingIndicator() {
   }
 }
 </script>
+  <script>
+/* ===== Sessions 26–30: ElevenLabs TTS & Live Chat Integration ===== */
+
+// ---- Config ----
+const ELEVENLABS_TTS_API = 'https://api.elevenlabs.io/v1/text-to-speech/YOUR_VOICE_ID';
+const ELEVENLABS_API_KEY = 'sk_bd78e0a8be84f60dd48617e466ce55fa5ac0a27fa5c7a832';
+
+// ---- Multi-session memory ----
+if (!chatSessions) var chatSessions = [[]];
+let currentSession = 0;
+
+// ---- Typing indicator ----
+const typingIndicator = document.createElement("div");
+typingIndicator.id = "typingIndicator";
+typingIndicator.innerText = "🤖 is typing...";
+typingIndicator.style.color = "#bbb";
+typingIndicator.style.fontStyle = "italic";
+
+function showTypingIndicator() {
+  chatBox.appendChild(typingIndicator);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  if (typingIndicator.parentNode) {
+    chatBox.removeChild(typingIndicator);
+  }
+}
+
+// ---- ElevenLabs TTS function ----
+async function playBotVoice(text) {
+  try {
+    const payload = {
+      text: characterRole ? `[${characterRole}] ${text}` : text,
+      voice_settings: { stability: 0.7, similarity_boost: 0.75 }
+    };
+    const response = await fetch(ELEVENLABS_TTS_API, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    const blob = await response.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    audio.play();
+  } catch (err) {
+    console.error('TTS failed:', err);
+  }
+}
+
+// ---- Append to session memory ----
+const oldAppendMessage = appendMessage;
+appendMessage = function(sender, text) {
+  oldAppendMessage(sender, text);
+  chatSessions[currentSession].push({ sender, text });
+};
+
+// ---- Switch session (optional) ----
+function switchSession(index) {
+  currentSession = index;
+  chatBox.innerHTML = "";
+  chatSessions[currentSession].forEach(msg => appendMessage(msg.sender, msg.text));
+}
+
+// ---- Update sendMessage ----
+const oldSendMessage = sendMessage;
+sendMessage = async function() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  appendMessage("user", text);
+  input.value = "";
+
+  // Show typing indicator
+  showTypingIndicator();
+
+  // Call GPT API (existing aiReplyAPI)
+  const botReply = await aiReplyAPI(text);
+
+  // Remove typing indicator
+  removeTypingIndicator();
+
+  // Display bot text
+  appendMessage("bot", botReply);
+
+  // Play ElevenLabs voice
+  playBotVoice(botReply);
+};
+</script>
 </body>
 </html>
