@@ -1,348 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Next-Gen AI Chat</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VENOM AI Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-color: #202124;
+    --menu-bg: rgba(17,17,17,0.95);
+    --user-color: #2d89ef;
+    --bot-color: #333;
+    --text-color: #e0e0e0;
+    --hover-color: #2d89ef33;
+  }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family:'Roboto',sans-serif; background: var(--bg-color); color: var(--text-color); display:flex; flex-direction:column; height:100vh; overflow:hidden; }
 
-  <!-- Google Fonts for modern look -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  /* Hamburger Button */
+  #menuBtn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1000;
+    background: var(--user-color);
+    color: #fff;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+  }
 
-  <style>
-    /* === CSS Variables for theme === */
-    :root {
-      --sidebar-width: 250px;
-      --bg-color: #202124;
-      --sidebar-bg: #111;
-      --user-color: #2d89ef;
-      --bot-color: #333;
-      --text-color: #e0e0e0;
-      --hover-color: #2d89ef33;
-    }
+  /* Popup Menu */
+  #popupMenu {
+    position: fixed;
+    top:0;
+    left:0;
+    width:0;
+    height:100%;
+    background-color: var(--menu-bg);
+    overflow-x:hidden;
+    transition:0.3s;
+    z-index:999;
+    padding-top:60px;
+  }
+  #popupMenu .menu-item {
+    padding:15px 20px;
+    cursor:pointer;
+    transition: background 0.3s, transform 0.2s;
+  }
+  #popupMenu .menu-item:hover {
+    background: var(--hover-color);
+    transform: scale(1.05);
+  }
+  #popupMenu .menu-item.active {
+    background: var(--user-color);
+    color:#fff;
+  }
 
-    /* === Global Styles === */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Roboto', sans-serif;
-      display: flex;
-      height: 100vh;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      overflow: hidden;
-    }
+  /* Chat area */
+  #chatContainer { flex:1; display:flex; flex-direction:column; padding:20px; overflow-y:auto; margin-top:60px; }
+  .message { max-width:70%; padding:10px 15px; margin-bottom:10px; border-radius:12px; line-height:1.4em; word-wrap:break-word; }
+  .user { background: var(--user-color); align-self:flex-end; text-align:right; color:white; }
+  .bot { background: var(--bot-color); align-self:flex-start; text-align:left; color:#ddd; }
 
-    /* === Sidebar === */
-    #sidebar {
-      width: var(--sidebar-width);
-      background-color: var(--sidebar-bg);
-      display: flex;
-      flex-direction: column;
-      transition: all 0.3s ease;
-      padding: 20px 10px;
-    }
-
-    /* Sidebar logo with glow animation */
-    #sidebar .logo {
-      font-size: 24px;
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 30px;
-      color: var(--user-color);
-      animation: glow 2s infinite alternate;
-    }
-
-    @keyframes glow {
-      from { text-shadow: 0 0 5px var(--user-color); }
-      to { text-shadow: 0 0 20px var(--user-color); }
-    }
-
-    /* Sidebar menu items */
-    .menu-item {
-      padding: 15px 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      transition: background 0.3s, transform 0.2s;
-    }
-    .menu-item:hover {
-      background-color: var(--hover-color);
-      transform: scale(1.05);
-    }
-    .menu-item.active {
-      background-color: var(--user-color);
-      color: #fff;
-    }
-
-    /* Sidebar footer placeholder */
-    #sidebar footer {
-      margin-top: auto;
-      font-size: 12px;
-      text-align: center;
-      color: #777;
-    }
-
-    /* === Main Chat Area === */
-    #main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background-color: var(--bg-color);
-      transition: background 0.3s;
-    }
-
-    /* Chat message container */
-    #chatBox {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Chat bubbles */
-    .message {
-      max-width: 70%;
-      padding: 10px 15px;
-      margin-bottom: 10px;
-      border-radius: 12px;
-      line-height: 1.4em;
-      word-wrap: break-word;
-      transition: transform 0.2s;
-    }
-    .message.user {
-      background-color: var(--user-color);
-      align-self: flex-end;
-      color: white;
-      text-align: right;
-    }
-    .message.bot {
-      background-color: var(--bot-color);
-      align-self: flex-start;
-      color: #ddd;
-      text-align: left;
-    }
-    .message:hover {
-      transform: scale(1.02);
-    }
-
-    /* Chat input area */
-    #inputBar {
-      display: flex;
-      padding: 10px 20px;
-      border-top: 1px solid #333;
-      background-color: #1a1a1a;
-    }
-    #userInput {
-      flex: 1;
-      padding: 12px 15px;
-      border-radius: 25px;
-      border: none;
-      outline: none;
-      font-size: 16px;
-      margin-right: 10px;
-      background-color: #111;
-      color: var(--text-color);
-    }
-    #sendBtn {
-      padding: 12px 20px;
-      border-radius: 25px;
-      border: none;
-      background-color: var(--user-color);
-      color: #fff;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background 0.3s, transform 0.2s;
-    }
-    #sendBtn:hover {
-      background-color: #1b5dab;
-      transform: scale(1.05);
-    }
-  </style>
+  /* Input bar */
+  #inputBar { display:flex; padding:10px; background:#1a1a1a; border-top:1px solid #333; }
+  #userInput { flex:1; padding:12px 15px; border-radius:25px; border:none; outline:none; background:#111; color: var(--text-color); margin-right:10px; }
+  #sendBtn { padding:12px 20px; border-radius:25px; border:none; background: var(--user-color); color:#fff; cursor:pointer; font-weight:500; transition:0.3s; }
+  #sendBtn:hover { background:#1b5dab; transform:scale(1.05); }
+</style>
 </head>
 <body>
 
-  <!-- Sidebar -->
-  <div id="sidebar">
-    <div class="logo">VENOM AI</div>
-    <div class="menu-item active" data-tab="chat">Chat</div>
-    <div class="menu-item" data-tab="voice">Voice Settings</div>
-    <div class="menu-item" data-tab="history">History</div>
-    <div class="menu-item" data-tab="api">API Info</div>
-    <div class="menu-item" data-tab="settings">Settings</div>
-    <footer>Powered by ElevenLabs</footer>
-  </div>
+<button id="menuBtn">☰ Menu</button>
 
-  <!-- Main Area -->
-  <div id="main">
-    <div id="chatBox">
-      <!-- Chat messages appear here -->
-      <div class="message bot">🤖 Welcome to VENOM AI. Your voice-enabled assistant is ready!</div>
-    </div>
-    <div id="inputBar">
-      <input type="text" id="userInput" placeholder="Type your message..." />
-      <button id="sendBtn">Send</button>
-    </div>
-  </div>
+<div id="popupMenu">
+  <div class="menu-item active" data-tab="chat">Chat</div>
+  <div class="menu-item" data-tab="voice">Voice Settings</div>
+  <div class="menu-item" data-tab="history">History</div>
+  <div class="menu-item" data-tab="api">API Info</div>
+  <div class="menu-item" data-tab="settings">Settings</div>
+</div>
+  <div id="voiceSettings" style="display:none; padding: 20px;">
+  <label for="characterSelect">Select Character Voice:</label>
+  <select id="characterSelect">
+    <option value="alloy">Alloy</option>
+    <option value="aria">Aria</option>
+    <option value="rex">Rex</option>
+  </select>
+  <button id="playTestBtn">Play Test Voice</button>
+</div>
 
-  <!-- Minimal JS for tab switching and message sending -->
-  <script>
-    const tabs = document.querySelectorAll('.menu-item');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        // For now just log tab switching
-        console.log('Switched to tab:', tab.dataset.tab);
-      });
-    });
+<div id="chatContainer">
+  <div class="message bot">🤖 Welcome to VENOM AI. Your voice-enabled assistant is ready!</div>
+</div>
 
-    const sendBtn = document.getElementById('sendBtn');
-    const input = document.getElementById('userInput');
-    const chatBox = document.getElementById('chatBox');
+<div id="inputBar">
+  <input type="text" id="userInput" placeholder="Type your message..."/>
+  <button id="sendBtn">Send</button>
+</div>
 
-    function appendMessage(sender, text) {
-      const msg = document.createElement('div');
-      msg.classList.add('message', sender);
-      msg.innerText = text;
-      chatBox.appendChild(msg);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    sendBtn.addEventListener('click', () => {
-      const text = input.value.trim();
-      if (!text) return;
-      appendMessage('user', text);
-      input.value = '';
-      // Placeholder bot reply
-      setTimeout(() => appendMessage('bot', '🤖 [Bot response placeholder]'), 600);
-    });
-
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') sendBtn.click();
-    });
-  </script>
-  <!-- === Session 2: ElevenLabs Voice Integration === -->
 <script>
-/* 
-  This session adds voice capabilities using ElevenLabs TTS API.
-  It allows the bot to speak messages immediately after replying.
-  Voice settings can be adjusted live in the sidebar.
-*/
+  // Hamburger toggle
+  const menuBtn = document.getElementById('menuBtn');
+  const popupMenu = document.getElementById('popupMenu');
+  let menuOpen = false;
+  menuBtn.addEventListener('click', () => {
+    popupMenu.style.width = menuOpen ? '0' : '250px';
+    menuOpen = !menuOpen;
+  });
 
-// Replace this with your ElevenLabs API key
-const ELEVEN_LABS_API_KEY = "sk_bd78e0a8be84f60dd48617e466ce55fa5ac0a27fa5c7a832";
+  // Menu item click
+  const tabs = document.querySelectorAll('#popupMenu .menu-item');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      console.log('Switched to tab:', tab.dataset.tab);
+    });
+  });
 
-// Default TTS settings
-let selectedVoice = "EXAVITQu4vr4xnSDxMaL"; // Replace with a real voice ID
-let pitch = 1.0;
-let speed = 1.0;
-let volume = 1.0;
+  const sendBtn = document.getElementById('sendBtn');
+  const input = document.getElementById('userInput');
+  const chatBox = document.getElementById('chatContainer');
 
-// Typing indicator element
-function showTypingIndicator() {
-  const indicator = document.createElement("div");
-  indicator.classList.add("message", "bot");
-  indicator.id = "typingIndicator";
-  indicator.innerText = "🤖 Typing...";
-  chatBox.appendChild(indicator);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function removeTypingIndicator() {
-  const indicator = document.getElementById("typingIndicator");
-  if (indicator) indicator.remove();
-}
-
-// Function to call ElevenLabs TTS API
-async function playBotVoice(message) {
-  try {
-    showTypingIndicator();
-
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}`,
-      {
-        method: "POST",
-        headers: {
-          "xi-api-key": ELEVEN_LABS_API_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          text: message,
-          voice_settings: { stability: 0.75, similarity_boost: 0.75, style: "neutral" }
-        })
-      }
-    );
-
-    const arrayBuffer = await response.arrayBuffer();
-    const audioBlob = new Blob([arrayBuffer], { type: "audio/mpeg" });
-    const audioURL = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioURL);
-    audio.volume = volume;
-    audio.play();
-
-    removeTypingIndicator();
-  } catch (err) {
-    console.error("TTS Error:", err);
-    removeTypingIndicator();
-    appendMessage("bot", "⚠️ Voice playback failed.");
+  function appendMessage(sender, text) {
+    const msg = document.createElement('div');
+    msg.classList.add('message', sender);
+    msg.innerText = text;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
   }
-}
 
-// Updated sendMessage function with TTS
-sendBtn.addEventListener("click", async () => {
-  const text = input.value.trim();
-  if (!text) return;
+  sendBtn.addEventListener('click', () => {
+    const text = input.value.trim();
+    if(!text) return;
+    appendMessage('user', text);
+    input.value='';
+    setTimeout(()=>appendMessage('bot','🤖 [Bot response placeholder]'),600);
+  });
 
-  appendMessage("user", text);
-  input.value = "";
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') sendBtn.click(); });
+  const voiceTab = document.querySelector('[data-tab="voice"]');
+const voiceSettings = document.getElementById('voiceSettings');
+const characterSelect = document.getElementById('characterSelect');
+const playTestBtn = document.getElementById('playTestBtn');
 
-  // Placeholder bot reply (replace with AI call later)
-  const botReply = "Hello! I can now speak using ElevenLabs TTS.";
-  appendMessage("bot", botReply);
-
-  // Play TTS for bot reply
-  await playBotVoice(botReply);
+// Toggle voice settings visibility
+voiceTab.addEventListener('click', () => {
+  voiceSettings.style.display = voiceSettings.style.display === 'none' ? 'block' : 'none';
 });
 
-// Voice settings UI (example, add in sidebar)
-const voiceSettingsHTML = `
-  <div style="padding:10px;">
-    <label>Voice:
-      <select id="voiceSelect">
-        <option value="EXAVITQu4vr4xnSDxMaL">Default</option>
-        <option value="anotherVoiceID">Character 2</option>
-      </select>
-    </label>
-    <br/><br/>
-    <label>Pitch: <span id="pitchVal">1.0</span></label>
-    <input type="range" id="pitchSlider" min="0.5" max="2.0" step="0.05" value="1.0">
-    <br/><br/>
-    <label>Speed: <span id="speedVal">1.0</span></label>
-    <input type="range" id="speedSlider" min="0.5" max="2.0" step="0.05" value="1.0">
-    <br/><br/>
-    <label>Volume: <span id="volumeVal">1.0</span></label>
-    <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1.0">
-  </div>
-`;
+// ElevenLabs API key
+const ELEVEN_KEY = 'sk_bd78e0a8be84f60dd48617e466ce55fa5ac0a27fa5c7a832';
 
-const voiceTab = document.querySelector('.menu-item[data-tab="voice"]');
-voiceTab.addEventListener('click', () => {
-  document.getElementById('chatBox').innerHTML = voiceSettingsHTML;
-  
-  // Sliders and select change events
-  document.getElementById('voiceSelect').addEventListener('change', e => selectedVoice = e.target.value);
-  document.getElementById('pitchSlider').addEventListener('input', e => {
-    pitch = parseFloat(e.target.value);
-    document.getElementById('pitchVal').innerText = pitch.toFixed(2);
-  });
-  document.getElementById('speedSlider').addEventListener('input', e => {
-    speed = parseFloat(e.target.value);
-    document.getElementById('speedVal').innerText = speed.toFixed(2);
-  });
-  document.getElementById('volumeSlider').addEventListener('input', e => {
-    volume = parseFloat(e.target.value);
-    document.getElementById('volumeVal').innerText = volume.toFixed(2);
-  });
+// Play TTS test
+playTestBtn.addEventListener('click', async () => {
+  const selectedVoice = characterSelect.value;
+  const text = `Hello, this is a test voice for ${selectedVoice}!`;
+
+  try {
+    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + selectedVoice, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'xi-api-key': ELEVEN_KEY
+      },
+      body: JSON.stringify({ text })
+    });
+
+    const blob = await res.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    audio.play();
+  } catch (err) {
+    console.error('TTS playback failed:', err);
+    alert('Failed to play voice.');
+  }
 });
 </script>
 </body>
