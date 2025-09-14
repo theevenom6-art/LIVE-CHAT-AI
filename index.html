@@ -3,1541 +3,346 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Character Live Chat</title>
+  <title>Next-Gen AI Chat</title>
+
+  <!-- Google Fonts for modern look -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
   <style>
+    /* === CSS Variables for theme === */
+    :root {
+      --sidebar-width: 250px;
+      --bg-color: #202124;
+      --sidebar-bg: #111;
+      --user-color: #2d89ef;
+      --bot-color: #333;
+      --text-color: #e0e0e0;
+      --hover-color: #2d89ef33;
+    }
+
+    /* === Global Styles === */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Roboto', sans-serif;
+      display: flex;
       height: 100vh;
-      background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
-      color: white;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      overflow: hidden;
+    }
+
+    /* === Sidebar === */
+    #sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--sidebar-bg);
       display: flex;
       flex-direction: column;
+      transition: all 0.3s ease;
+      padding: 20px 10px;
     }
 
-    header {
-      background: #1e1e1e;
-      padding: 15px;
+    /* Sidebar logo with glow animation */
+    #sidebar .logo {
+      font-size: 24px;
+      font-weight: 700;
       text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      border-bottom: 1px solid #333;
+      margin-bottom: 30px;
+      color: var(--user-color);
+      animation: glow 2s infinite alternate;
     }
 
-    .welcome {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
+    @keyframes glow {
+      from { text-shadow: 0 0 5px var(--user-color); }
+      to { text-shadow: 0 0 20px var(--user-color); }
     }
 
-    .welcome h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
-    }
-
-    .welcome p {
-      font-size: 16px;
-      margin-bottom: 20px;
-      color: #bbb;
-    }
-
-    .welcome button {
-      background: #2d89ef;
-      border: none;
-      padding: 12px 25px;
+    /* Sidebar menu items */
+    .menu-item {
+      padding: 15px 10px;
       border-radius: 8px;
-      font-size: 16px;
+      margin-bottom: 10px;
       cursor: pointer;
-      color: white;
       transition: background 0.3s, transform 0.2s;
     }
-
-    .welcome button:hover {
-      background: #1b5dab;
+    .menu-item:hover {
+      background-color: var(--hover-color);
       transform: scale(1.05);
     }
-
-    footer {
-      text-align: center;
-      font-size: 12px;
-      color: #777;
-      padding: 10px;
+    .menu-item.active {
+      background-color: var(--user-color);
+      color: #fff;
     }
 
-    #chatContainer {
-      display: none;
-      opacity: 0;
-      transition: opacity 0.6s ease-in-out;
+    /* Sidebar footer placeholder */
+    #sidebar footer {
+      margin-top: auto;
+      font-size: 12px;
+      text-align: center;
+      color: #777;
+    }
+
+    /* === Main Chat Area === */
+    #main {
       flex: 1;
       display: flex;
       flex-direction: column;
+      background-color: var(--bg-color);
+      transition: background 0.3s;
     }
 
-    #chatContainer.active {
-      display: flex;
-      opacity: 1;
-    }
-
-    #roleSetup {
-      padding: 20px;
-      border-bottom: 1px solid #333;
-    }
-
-    #roleSetup input {
-      width: 70%;
-      padding: 10px;
-      border-radius: 5px;
-      border: none;
-      outline: none;
-    }
-
-    #roleSetup button {
-      padding: 10px 15px;
-      margin-left: 10px;
-      border: none;
-      border-radius: 5px;
-      background: #2d89ef;
-      color: white;
-      cursor: pointer;
-    }
-
+    /* Chat message container */
     #chatBox {
       flex: 1;
       overflow-y: auto;
-      padding: 15px;
-      background: #111;
-      border-bottom: 1px solid #333;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
     }
 
+    /* Chat bubbles */
+    .message {
+      max-width: 70%;
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      line-height: 1.4em;
+      word-wrap: break-word;
+      transition: transform 0.2s;
+    }
+    .message.user {
+      background-color: var(--user-color);
+      align-self: flex-end;
+      color: white;
+      text-align: right;
+    }
+    .message.bot {
+      background-color: var(--bot-color);
+      align-self: flex-start;
+      color: #ddd;
+      text-align: left;
+    }
+    .message:hover {
+      transform: scale(1.02);
+    }
+
+    /* Chat input area */
     #inputBar {
       display: flex;
-      padding: 10px;
-      background: #1e1e1e;
+      padding: 10px 20px;
       border-top: 1px solid #333;
+      background-color: #1a1a1a;
     }
-
-    #inputBar input {
+    #userInput {
       flex: 1;
-      padding: 10px;
+      padding: 12px 15px;
+      border-radius: 25px;
       border: none;
-      border-radius: 5px;
       outline: none;
+      font-size: 16px;
+      margin-right: 10px;
+      background-color: #111;
+      color: var(--text-color);
     }
-
-    #inputBar button {
-      margin-left: 10px;
-      padding: 10px 15px;
+    #sendBtn {
+      padding: 12px 20px;
+      border-radius: 25px;
       border: none;
-      border-radius: 5px;
-      background: #2d89ef;
-      color: white;
+      background-color: var(--user-color);
+      color: #fff;
       cursor: pointer;
+      font-weight: 500;
+      transition: background 0.3s, transform 0.2s;
+    }
+    #sendBtn:hover {
+      background-color: #1b5dab;
+      transform: scale(1.05);
     }
   </style>
 </head>
 <body>
-  <header>🎭 AI Roleplay</header>
 
-  <!-- Part 1: Welcome Screen -->
-  <div class="welcome" id="welcomeScreen">
-    <h1>Welcome to AI Character Live Chat</h1>
-    <p>Choose your roleplay character and start chatting instantly</p>
-    <button onclick="enterChat()">Enter Chat</button>
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div class="logo">VENOM AI</div>
+    <div class="menu-item active" data-tab="chat">Chat</div>
+    <div class="menu-item" data-tab="voice">Voice Settings</div>
+    <div class="menu-item" data-tab="history">History</div>
+    <div class="menu-item" data-tab="api">API Info</div>
+    <div class="menu-item" data-tab="settings">Settings</div>
+    <footer>Powered by ElevenLabs</footer>
   </div>
 
-  <!-- Part 2: Chat Container -->
-  <div id="chatContainer">
-
-    <!-- Role Setup -->
-    <div id="roleSetup">
-      <h2 style="margin:0 0 10px 0; font-size:18px;">🎭 Set Your Character</h2>
-      <input id="roleInput" type="text" placeholder="Describe the character (e.g. Joker, act like Heath Ledger)">
-      <button onclick="setRole()">Save</button>
-      <p id="activeRole" style="margin-top:10px; font-size:14px; color:#bbb;">No character set yet.</p>
+  <!-- Main Area -->
+  <div id="main">
+    <div id="chatBox">
+      <!-- Chat messages appear here -->
+      <div class="message bot">🤖 Welcome to VENOM AI. Your voice-enabled assistant is ready!</div>
     </div>
-
-    <!-- Chat Messages -->
-    <div id="chatBox"></div>
-
-    <!-- Input Bar -->
     <div id="inputBar">
-      <input id="userInput" type="text" placeholder="Type your message...">
-      <button onclick="sendMessage()">Send</button>
+      <input type="text" id="userInput" placeholder="Type your message..." />
+      <button id="sendBtn">Send</button>
     </div>
   </div>
 
-  <!-- Part 3: Footer -->
-  <footer>Powered by GPT-4o</footer>
-
-  <!-- JS -->
+  <!-- Minimal JS for tab switching and message sending -->
   <script>
-/* ===== Session 4: Enhanced AI Chat & Role Integration ===== */
-
-let characterRole = "";
-
-function enterChat() {
-  document.getElementById("welcomeScreen").style.display = "none";
-  document.getElementById("chatContainer").classList.add("active");
-}
-
-// Role setup with persistence
-function setRole() {
-  const role = document.getElementById("roleInput").value.trim();
-  if (role) {
-    characterRole = role;
-    localStorage.setItem('characterRole', characterRole); // Save role
-    document.getElementById("activeRole").innerText = "✅ Character set to: " + role;
-  } else {
-    document.getElementById("activeRole").innerText = "⚠️ No character set.";
-  }
-}
-
-// Load saved role on page load
-window.onload = () => {
-  const savedRole = localStorage.getItem('characterRole');
-  if (savedRole) {
-    characterRole = savedRole;
-    document.getElementById("activeRole").innerText = "✅ Character set to: " + characterRole;
-  }
-};
-
-const chatBox = document.getElementById("chatBox");
-const input = document.getElementById("userInput");
-
-// Function to display messages
-function appendMessage(sender, text) {
-  const div = document.createElement("div");
-  div.style.margin = "10px 0";
-  div.style.padding = "10px";
-  div.style.borderRadius = "8px";
-  div.style.maxWidth = "70%";
-  div.style.lineHeight = "1.4em";
-
-  if (sender === "user") {
-    div.style.background = "#2d89ef";
-    div.style.marginLeft = "auto";
-    div.style.textAlign = "right";
-  } else {
-    div.style.background = "#333";
-    div.style.marginRight = "auto";
-  }
-
-  div.innerText = text;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// Function to handle user messages and call AI response
-function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
-
-  appendMessage("user", text);
-  input.value = "";
-
-  // Session 4 AI response simulation
-  setTimeout(() => {
-    let botReply;
-    if (characterRole) {
-      botReply = `🤖 [${characterRole} responds]: ${text.split('').reverse().join('')}`;
-    } else {
-      botReply = `🤖 [AI Response will appear here]`;
-    }
-    appendMessage("bot", botReply);
-  }, 700);
-}
-
-// Press Enter to send
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendMessage();
-});
-</script>
-  <script>
-/* ===== Session 5: Advanced AI Chat Simulation / Placeholder API ===== */
-
-function aiReplyAPI(message) {
-  // Placeholder for real AI API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      if (characterRole) {
-        resolve(`🤖 [${characterRole} says]: ${message.split('').reverse().join('')}`);
-      } else {
-        resolve(`🤖 [AI Response placeholder]`);
-      }
-    }, 800);
-  });
-}
-
-// Override sendMessage to use aiReplyAPI
-function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
-
-  appendMessage("user", text);
-  input.value = "";
-
-  aiReplyAPI(text).then(reply => appendMessage("bot", reply));
-}
-
-// Save chat history before closing page
-window.addEventListener('beforeunload', () => {
-  const messages = [];
-  chatBox.querySelectorAll('div').forEach(div => messages.push(div.innerText));
-  localStorage.setItem('chatHistory', JSON.stringify(messages));
-});
-
-// Load chat history on page load
-window.addEventListener('load', () => {
-  const savedMessages = JSON.parse(localStorage.getItem('chatHistory') || '[]');
-  savedMessages.forEach(msg => appendMessage(msg.startsWith('🤖') ? 'bot' : 'user', msg));
-});
-  </script>
-    <script>
-/* ===== Session 6: AI Typing Indicator & Role Switching ===== */
-
-let isTyping = false;
-
-// Show typing indicator
-function showTypingIndicator() {
-  if (isTyping) return;
-  isTyping = true;
-
-  const typingDiv = document.createElement("div");
-  typingDiv.id = "typingIndicator";
-  typingDiv.innerText = "🤖 AI is typing...";
-  typingDiv.style.fontStyle = "italic";
-  typingDiv.style.color = "#aaa";
-  typingDiv.style.margin = "10px 0";
-  chatBox.appendChild(typingDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// Remove typing indicator
-function removeTypingIndicator() {
-  const typingDiv = document.getElementById("typingIndicator");
-  if (typingDiv) {
-    chatBox.removeChild(typingDiv);
-  }
-  isTyping = false;
-}
-
-// Override aiReplyAPI to include typing effect
-async function aiReplyAPI(message) {
-  showTypingIndicator();
-
-  // Simulate delay
-  await new Promise(r => setTimeout(r, 1000));
-
-  removeTypingIndicator();
-
-  if (characterRole) {
-    return `🤖 [${characterRole} says]: ${message.split('').reverse().join('')}`;
-  } else {
-    return `🤖 [AI Response placeholder]`;
-  }
-}
-
-// Optional: switch role dynamically
-function switchRole(newRole) {
-  characterRole = newRole;
-  localStorage.setItem('characterRole', characterRole);
-  document.getElementById("activeRole").innerText = "✅ Character set to: " + characterRole;
-}
-  </script>
-<script>
-/* ===== Session 7: Timestamps, Role Responses & Clear Chat ===== */
-
-// Add timestamp to a message
-function appendMessage(sender, text) {
-  const div = document.createElement("div");
-  div.style.margin = "10px 0";
-  div.style.padding = "10px";
-  div.style.borderRadius = "8px";
-  div.style.maxWidth = "70%";
-  div.style.lineHeight = "1.4em";
-  div.style.position = "relative";
-
-  const timeSpan = document.createElement("span");
-  const now = new Date();
-  timeSpan.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  timeSpan.style.fontSize = "10px";
-  timeSpan.style.position = "absolute";
-  timeSpan.style.bottom = "2px";
-  timeSpan.style.right = "10px";
-  timeSpan.style.color = "#aaa";
-
-  if (sender === "user") {
-    div.style.background = "#2d89ef";
-    div.style.marginLeft = "auto";
-    div.style.textAlign = "right";
-  } else {
-    div.style.background = "#333";
-    div.style.marginRight = "auto";
-  }
-
-  div.innerText = text;
-  div.appendChild(timeSpan);
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// Clear chat
-function clearChat() {
-  chatBox.innerHTML = "";
-  localStorage.removeItem('chatHistory');
-}
-
-// Optional: custom response per role
-async function aiReplyAPI(message) {
-  showTypingIndicator();
-  await new Promise(r => setTimeout(r, 1000));
-  removeTypingIndicator();
-
-  let response;
-  if (characterRole) {
-    switch (characterRole.toLowerCase()) {
-      case "joker":
-        response = `🤡 [${characterRole} laughs]: ${message.split('').reverse().join('')}`;
-        break;
-      case "sherlock":
-        response = `🕵️‍♂️ [${characterRole} deduces]: ${message.split('').join('-')}`;
-        break;
-      default:
-        response = `🤖 [${characterRole} says]: ${message.split('').reverse().join('')}`;
-    }
-  } else {
-    response = `🤖 [AI Response placeholder]`;
-  }
-
-  return response;
-}
-  </script>
-<script>
-/* ===== Session 8: Multi-Session Chat & Enhanced Typing ===== */
-
-let chatSessions = {}; // store multiple chats
-let currentSession = 'default';
-
-// Initialize default session
-if (!chatSessions[currentSession]) chatSessions[currentSession] = [];
-
-// Save messages to session
-function saveMessageToSession(sender, text) {
-  if (!chatSessions[currentSession]) chatSessions[currentSession] = [];
-  chatSessions[currentSession].push({ sender, text, time: new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) });
-  localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
-}
-
-// Load messages for current session
-function loadSession(sessionName) {
-  currentSession = sessionName;
-  chatBox.innerHTML = "";
-  chatSessions[currentSession] = chatSessions[currentSession] || [];
-  chatSessions[currentSession].forEach(msg => appendMessage(msg.sender, msg.text));
-}
-
-// Override appendMessage to save to session
-const oldAppendMessage = appendMessage;
-appendMessage = function(sender, text) {
-  oldAppendMessage(sender, text);
-  saveMessageToSession(sender, text);
-};
-
-// Enhanced typing indicator (animated dots)
-function showTypingIndicator() {
-  if (isTyping) return;
-  isTyping = true;
-
-  const typingDiv = document.createElement("div");
-  typingDiv.id = "typingIndicator";
-  typingDiv.style.fontStyle = "italic";
-  typingDiv.style.color = "#aaa";
-  typingDiv.style.margin = "10px 0";
-
-  let dots = "";
-  const interval = setInterval(() => {
-    dots = dots.length < 3 ? dots + "." : "";
-    typingDiv.innerText = `🤖 AI is typing${dots}`;
-  }, 500);
-
-  chatBox.appendChild(typingDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  typingDiv.dataset.interval = interval;
-}
-
-// Remove typing indicator
-function removeTypingIndicator() {
-  const typingDiv = document.getElementById("typingIndicator");
-  if (typingDiv) {
-    clearInterval(typingDiv.dataset.interval);
-    chatBox.removeChild(typingDiv);
-  }
-  isTyping = false;
-}
-</script>
-  <script>
-/* ===== Session 9: Message Animations & Emoji Input ===== */
-
-// Animate message appearance
-const oldAppendMessage2 = appendMessage;
-appendMessage = function(sender, text) {
-  const div = document.createElement("div");
-  div.style.margin = "10px 0";
-  div.style.padding = "10px";
-  div.style.borderRadius = "8px";
-  div.style.maxWidth = "70%";
-  div.style.lineHeight = "1.4em";
-  div.style.opacity = 0;
-  div.style.transition = "opacity 0.5s ease, transform 0.3s ease";
-  div.style.transform = "translateY(10px)";
-
-  const timeSpan = document.createElement("span");
-  const now = new Date();
-  timeSpan.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  timeSpan.style.fontSize = "10px";
-  timeSpan.style.position = "absolute";
-  timeSpan.style.bottom = "2px";
-  timeSpan.style.right = "10px";
-  timeSpan.style.color = "#aaa";
-
-  if (sender === "user") {
-    div.style.background = "#2d89ef";
-    div.style.marginLeft = "auto";
-    div.style.textAlign = "right";
-  } else {
-    div.style.background = "#333";
-    div.style.marginRight = "auto";
-  }
-
-  div.innerText = text;
-  div.appendChild(timeSpan);
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  // Animate in
-  requestAnimationFrame(() => {
-    div.style.opacity = 1;
-    div.style.transform = "translateY(0)";
-  });
-
-  // Save to session
-  saveMessageToSession(sender, text);
-
-  // Play sound for bot
-  if (sender === "bot" && text.includes("😂")) {
-  const audio = new Audio('https://www.myinstants.com/media/sounds/funny-laugh.mp3');
-  audio.play().catch(() => {});
-}
-};
-
-// Emoji buttons example
-const emojiBar = document.createElement("div");
-emojiBar.style.display = "flex";
-emojiBar.style.padding = "5px 10px";
-emojiBar.style.gap = "5px";
-["😀","😂","😎","🤖","🎭"].forEach(emoji => {
-  const btn = document.createElement("button");
-  btn.innerText = emoji;
-  btn.style.padding = "5px 10px";
-  btn.style.border = "none";
-  btn.style.borderRadius = "5px";
-  btn.style.cursor = "pointer";
-  btn.onclick = () => input.value += emoji;
-  emojiBar.appendChild(btn);
-});
-document.getElementById("inputBar").prepend(emojiBar);
-</script>
-  <script>
-/* ===== Session 10: Role Presets & Persistent Chat Sessions ===== */
-
-let rolePresets = JSON.parse(localStorage.getItem('rolePresets') || '{}');
-
-// Save a new role preset
-function saveRolePreset(name) {
-  if (!characterRole) return alert("Set a character role first!");
-  rolePresets[name] = characterRole;
-  localStorage.setItem('rolePresets', JSON.stringify(rolePresets));
-  alert(`✅ Role preset "${name}" saved!`);
-}
-
-// Load a role preset
-function loadRolePreset(name) {
-  if (rolePresets[name]) {
-    switchRole(rolePresets[name]);
-    alert(`✅ Loaded role preset "${name}"`);
-  }
-}
-
-// Save chat history to localStorage
-function saveAllSessions() {
-  localStorage.setItem('chatSessions', JSON.stringify(chatSessions));
-}
-
-// Load chat history on page load
-window.addEventListener('load', () => {
-  const savedSessions = JSON.parse(localStorage.getItem('chatSessions') || '{}');
-  chatSessions = savedSessions;
-  if (!chatSessions[currentSession]) chatSessions[currentSession] = [];
-  loadSession(currentSession);
-});
-</script>
-  <script>
-/* ===== Session 11: Quick Replies & UI Enhancements ===== */
-
-// Quick-reply container
-const quickReplyBar = document.createElement("div");
-quickReplyBar.id = "quickReplyBar";
-quickReplyBar.style.display = "flex";
-quickReplyBar.style.gap = "5px";
-quickReplyBar.style.padding = "5px 10px";
-document.getElementById("inputBar").prepend(quickReplyBar);
-
-// Generate quick replies
-function showQuickReplies(replies = []) {
-  quickReplyBar.innerHTML = "";
-  replies.forEach(text => {
-    const btn = document.createElement("button");
-    btn.innerText = text;
-    btn.style.padding = "5px 10px";
-    btn.style.border = "none";
-    btn.style.borderRadius = "5px";
-    btn.style.cursor = "pointer";
-    btn.style.transition = "transform 0.2s";
-    btn.onmouseenter = () => btn.style.transform = "scale(1.1)";
-    btn.onmouseleave = () => btn.style.transform = "scale(1)";
-    btn.onclick = () => {
-      input.value = text;
-      sendMessage();
-      quickReplyBar.innerHTML = "";
-    };
-    quickReplyBar.appendChild(btn);
-  });
-}
-
-// Smooth scroll to latest
-function scrollToBottom() {
-  chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
-}
-
-// Override appendMessage to scroll
-const oldAppendMessage3 = appendMessage;
-appendMessage = function(sender, text) {
-  oldAppendMessage3(sender, text);
-  scrollToBottom();
-};
-</script>
-  <script>
-/* ===== Session 12: Dynamic AI Response Timing & Role Styles ===== */
-
-// Override aiReplyAPI for dynamic delays
-async function aiReplyAPI(message) {
-  showTypingIndicator();
-
-  // Dynamic delay: 300ms per 5 characters, min 700ms, max 2500ms
-  const delay = Math.min(Math.max(700, (message.length / 5) * 300), 2500);
-  await new Promise(r => setTimeout(r, delay));
-
-  removeTypingIndicator();
-
-  let response;
-  if (characterRole) {
-    switch (characterRole.toLowerCase()) {
-      case "joker":
-        response = `🤡 [${characterRole} laughs]: ${message.split('').reverse().join('')} 😈`;
-        break;
-      case "sherlock":
-        response = `🕵️‍♂️ [${characterRole} deduces]: ${message.split(' ').join('-')}`;
-        break;
-      case "venom":
-        response = `🕷️ [${characterRole} hisses]: ${message.toUpperCase()} ⚡`;
-        break;
-      default:
-        response = `🤖 [${characterRole} says]: ${message}`;
-    }
-  } else {
-    response = `🤖 [AI placeholder]: ${message}`;
-  }
-
-  return response;
-}
-
-// Optional: simulate small bounce animation for AI messages
-const oldAppendMessage4 = appendMessage;
-appendMessage = function(sender, text) {
-  oldAppendMessage4(sender, text);
-
-  if (sender === "bot") {
-    const lastMsg = chatBox.lastChild;
-    lastMsg.style.transform = "scale(0.95)";
-    setTimeout(() => lastMsg.style.transform = "scale(1)", 200);
-  }
-};
-</script>
-  <script>
-/* ===== Session 13: Message Edit, Delete & Copy ===== */
-
-function addMessageControls(msgDiv, index) {
-  // Only for user messages
-  if (!msgDiv || !chatSessions[currentSession][index] || chatSessions[currentSession][index].sender !== 'user') return;
-
-  const controls = document.createElement("div");
-  controls.style.display = "inline-flex";
-  controls.style.gap = "5px";
-  controls.style.marginLeft = "10px";
-
-  // Edit button
-  const editBtn = document.createElement("button");
-  editBtn.innerText = "✏️";
-  editBtn.style.cursor = "pointer";
-  editBtn.onclick = () => {
-    const newText = prompt("Edit your message:", chatSessions[currentSession][index].text);
-    if (newText !== null) {
-      chatSessions[currentSession][index].text = newText;
-      msgDiv.innerText = newText;
-      saveAllSessions();
-    }
-  };
-
-  // Delete button
-  const deleteBtn = document.createElement("button");
-  deleteBtn.innerText = "🗑️";
-  deleteBtn.style.cursor = "pointer";
-  deleteBtn.onclick = () => {
-    if (confirm("Delete this message?")) {
-      chatBox.removeChild(msgDiv);
-      chatSessions[currentSession].splice(index, 1);
-      saveAllSessions();
-    }
-  };
-
-  // Copy button
-  const copyBtn = document.createElement("button");
-  copyBtn.innerText = "📋";
-  copyBtn.style.cursor = "pointer";
-  copyBtn.onclick = () => {
-    navigator.clipboard.writeText(chatSessions[currentSession][index].text)
-      .then(() => alert("Message copied!"))
-      .catch(() => alert("Failed to copy."));
-  };
-
-  controls.appendChild(editBtn);
-  controls.appendChild(deleteBtn);
-  controls.appendChild(copyBtn);
-
-  msgDiv.appendChild(controls);
-}
-
-// Override appendMessage to add controls
-const oldAppendMessage5 = appendMessage;
-appendMessage = function(sender, text) {
-  oldAppendMessage5(sender, text);
-  const index = chatSessions[currentSession].length - 1;
-  const msgDiv = chatBox.lastChild;
-  addMessageControls(msgDiv, index);
-};
-</script>
-  <script>
-/* ===== Session 14: Role-Based AI Styling & Markdown ===== */
-
-function styleBotMessage(text) {
-  let styledText = text;
-
-  // Markdown-like formatting
-  styledText = styledText
-    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-    .replace(/_(.*?)_/g, '<i>$1</i>')
-    .replace(/~~(.*?)~~/g, '<s>$1</s>');
-
-  // Role-specific effects
-  if (characterRole) {
-    switch (characterRole.toLowerCase()) {
-      case "joker":
-        styledText = styledText
-          .split('').map(c => `<span style="color:hsl(${Math.random()*360},100%,70%)">${c}</span>`).join('') 
-          + " 🤡";
-        break;
-      case "sherlock":
-        styledText = `<i>${styledText} 🕵️‍♂️</i>`;
-        break;
-      case "venom":
-        styledText = `<b style="text-transform:uppercase; color:#0f0">${styledText} 🕷️</b>`;
-        break;
-      default:
-        styledText += " 🤖";
-    }
-  }
-
-  return styledText;
-}
-
-// Override appendMessage for AI styling
-const oldAppendMessage6 = appendMessage;
-appendMessage = function(sender, text) {
-  if (sender === "bot") {
-    text = styleBotMessage(text);
-    const div = document.createElement("div");
-    div.style.margin = "10px 0";
-    div.style.padding = "10px";
-    div.style.borderRadius = "8px";
-    div.style.maxWidth = "70%";
-    div.style.lineHeight = "1.4em";
-    div.style.background = "#333";
-    div.style.marginRight = "auto";
-    div.innerHTML = text; // use innerHTML for styled content
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
-    return;
-  }
-  oldAppendMessage6(sender, text);
-};
-</script>
-  <script>
-/* ===== Session 15: AI Typing Simulation ===== */
-
-const typingIndicator = document.createElement("div");
-typingIndicator.innerText = "🤖 is typing…";
-typingIndicator.style.fontStyle = "italic";
-typingIndicator.style.color = "#bbb";
-typingIndicator.style.margin = "10px 0";
-
-function showTypingIndicator() {
-  chatBox.appendChild(typingIndicator);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function removeTypingIndicator() {
-  if (chatBox.contains(typingIndicator)) {
-    chatBox.removeChild(typingIndicator);
-  }
-}
-
-// Override aiReplyAPI to simulate typing
-async function aiReplyAPI(message) {
-  showTypingIndicator();
-
-  // Base delay calculation
-  let baseDelay = Math.min(Math.max(700, (message.length / 5) * 300), 2500);
-
-  // Role-specific speed adjustments
-  if (characterRole) {
-    switch (characterRole.toLowerCase()) {
-      case "joker":
-        baseDelay *= 0.8; // faster, chaotic
-        break;
-      case "sherlock":
-        baseDelay *= 1.2; // slower, thoughtful
-        break;
-      case "venom":
-        baseDelay *= 1.0; // standard speed
-        break;
-    }
-  }
-
-  await new Promise(r => setTimeout(r, baseDelay));
-  removeTypingIndicator();
-
-  // Generate AI response (simple placeholder logic)
-  let response = characterRole
-    ? `[${characterRole} replies]: ${message.split('').reverse().join('')}`
-    : `🤖 [AI Response]: ${message}`;
-
-  return response;
-}
-
-// Update sendMessage to use aiReplyAPI with typing
-async function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
-
-  appendMessage("user", text);
-  input.value = "";
-
-  const botReply = await aiReplyAPI(text);
-  appendMessage("bot", botReply);
-}
-</script>
-  <script>
-/* ===== Session 16: Multi-Session Chat Management ===== */
-
-let chatSessions = [];
-let currentSession = 0;
-
-// Load saved sessions
-window.onload = () => {
-  const saved = localStorage.getItem("chatSessions");
-  if (saved) chatSessions = JSON.parse(saved);
-  if (!chatSessions.length) chatSessions.push([]);
-  currentSession = 0;
-  renderSession();
-};
-
-// Save all sessions
-function saveAllSessions() {
-  localStorage.setItem("chatSessions", JSON.stringify(chatSessions));
-}
-
-// Render messages for current session
-function renderSession() {
-  chatBox.innerHTML = "";
-  chatSessions[currentSession].forEach(msg => appendMessage(msg.sender, msg.text));
-}
-
-// Start new session
-function newSession() {
-  chatSessions.push([]);
-  currentSession = chatSessions.length - 1;
-  renderSession();
-}
-
-// Switch session by index
-function switchSession(index) {
-  if (index >= 0 && index < chatSessions.length) {
-    currentSession = index;
-    renderSession();
-  }
-}
-
-// Override appendMessage to save to session
-const oldAppendMessage7 = appendMessage;
-appendMessage = function(sender, text) {
-  // Save message in session
-  chatSessions[currentSession].push({ sender, text });
-  saveAllSessions();
-
-  oldAppendMessage7(sender, text);
-};
-</script>
-  <script>
-/* ===== Session 17: Chat UI & Session Tabs ===== */
-
-// Container for session tabs
-const sessionTabs = document.createElement("div");
-sessionTabs.style.display = "flex";
-sessionTabs.style.gap = "10px";
-sessionTabs.style.padding = "5px 10px";
-sessionTabs.style.background = "#222";
-sessionTabs.style.borderBottom = "1px solid #333";
-document.body.insertBefore(sessionTabs, chatBox);
-
-// Function to render session tabs
-function renderSessionTabs() {
-  sessionTabs.innerHTML = "";
-  chatSessions.forEach((session, idx) => {
-    const tab = document.createElement("button");
-    tab.innerText = session.label || `Session ${idx + 1}`;
-    tab.style.padding = "5px 10px";
-    tab.style.cursor = "pointer";
-    tab.style.borderRadius = "5px";
-    tab.style.border = "none";
-    tab.style.background = idx === currentSession ? "#2d89ef" : "#444";
-    tab.style.color = "white";
-
-    tab.onclick = () => switchSession(idx);
-    sessionTabs.appendChild(tab);
-  });
-
-  // New session button
-  const newTab = document.createElement("button");
-  newTab.innerText = "+ New";
-  newTab.style.padding = "5px 10px";
-  newTab.style.cursor = "pointer";
-  newTab.style.borderRadius = "5px";
-  newTab.style.border = "none";
-  newTab.style.background = "#28a745";
-  newTab.style.color = "white";
-  newTab.onclick = () => {
-    chatSessions.push([]);
-    chatSessions[chatSessions.length-1].label = `Session ${chatSessions.length}`;
-    currentSession = chatSessions.length - 1;
-    renderSessionTabs();
-    renderSession();
-    saveAllSessions();
-  };
-  sessionTabs.appendChild(newTab);
-}
-
-// Override switchSession to update tabs
-const oldSwitchSession = switchSession;
-switchSession = function(idx) {
-  oldSwitchSession(idx);
-  renderSessionTabs();
-};
-
-// Initial render
-renderSessionTabs();
-</script>
-  <script>
-/* ===== Session 18: Chat Export & Import ===== */
-
-// Export current session
-function exportSession() {
-  const sessionData = chatSessions[currentSession];
-  if (!sessionData || !sessionData.length) {
-    alert("No messages to export!");
-    return;
-  }
-  const blob = new Blob([JSON.stringify(sessionData, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = (chatSessions[currentSession].label || `session_${currentSession+1}`) + ".json";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-// Import session from file
-function importSession(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const imported = JSON.parse(e.target.result);
-      if (Array.isArray(imported)) {
-        chatSessions.push(imported);
-        currentSession = chatSessions.length - 1;
-        renderSessionTabs();
-        renderSession();
-        saveAllSessions();
-        alert("Session imported successfully!");
-      } else {
-        alert("Invalid session file.");
-      }
-    } catch (err) {
-      alert("Error parsing session file.");
-      console.error(err);
-    }
-  };
-  reader.readAsText(file);
-}
-
-// Add buttons for export/import
-const exportBtn = document.createElement("button");
-exportBtn.innerText = "💾 Export";
-exportBtn.style.marginLeft = "10px";
-exportBtn.style.padding = "5px 10px";
-exportBtn.style.cursor = "pointer";
-exportBtn.style.borderRadius = "5px";
-exportBtn.style.border = "none";
-exportBtn.style.background = "#ffc107";
-exportBtn.style.color = "#000";
-exportBtn.onclick = exportSession;
-sessionTabs.appendChild(exportBtn);
-
-const importInput = document.createElement("input");
-importInput.type = "file";
-importInput.accept = ".json";
-importInput.style.display = "none";
-importInput.onchange = importSession;
-
-const importBtn = document.createElement("button");
-importBtn.innerText = "📂 Import";
-importBtn.style.marginLeft = "5px";
-importBtn.style.padding = "5px 10px";
-importBtn.style.cursor = "pointer";
-importBtn.style.borderRadius = "5px";
-importBtn.style.border = "none";
-importBtn.style.background = "#17a2b8";
-importBtn.style.color = "white";
-importBtn.onclick = () => importInput.click();
-sessionTabs.appendChild(importBtn);
-
-document.body.appendChild(importInput);
-</script>
-  <script>
-/* ===== Session 19: Quick-Reply Buttons ===== */
-
-// Container for quick replies
-const quickReplyContainer = document.createElement("div");
-quickReplyContainer.style.display = "flex";
-quickReplyContainer.style.gap = "10px";
-quickReplyContainer.style.flexWrap = "wrap";
-quickReplyContainer.style.padding = "10px";
-quickReplyContainer.style.background = "#1e1e1e";
-document.body.insertBefore(quickReplyContainer, inputBar);
-
-// Define role-based quick replies
-const quickReplies = {
-  joker: ["Why so serious?", "Let's cause chaos 😂", "Do you want a joke?"],
-  sherlock: ["Elementary.", "I deduce that...", "Interesting observation."],
-  venom: ["We are Venom.", "Feed... on this.", "You cannot escape."],
-  default: ["Hello!", "How are you?", "Tell me more."]
-};
-
-// Render quick replies for current role
-function renderQuickReplies() {
-  quickReplyContainer.innerHTML = "";
-  const replies = characterRole && quickReplies[characterRole.toLowerCase()] 
-    ? quickReplies[characterRole.toLowerCase()] 
-    : quickReplies.default;
-
-  replies.forEach(reply => {
-    const btn = document.createElement("button");
-    btn.innerText = reply;
-    btn.style.padding = "5px 10px";
-    btn.style.border = "none";
-    btn.style.borderRadius = "5px";
-    btn.style.background = "#2d89ef";
-    btn.style.color = "white";
-    btn.style.cursor = "pointer";
-    btn.onclick = () => {
-      input.value = reply;
-      sendMessage();
-    };
-    quickReplyContainer.appendChild(btn);
-  });
-}
-
-// Update quick replies whenever role changes
-const oldSetRole = setRole;
-setRole = function() {
-  oldSetRole();
-  renderQuickReplies();
-};
-
-// Initial render
-renderQuickReplies();
-</script>
-  <script>
-/* ===== Session 20: AI Memory, GPT-4o API & Response Sound ===== */
-
-const MAX_MEMORY = 50; // Max messages to remember per session
-
-async function aiReplyAPI(message) {
-  showTypingIndicator();
-
-  const context = chatSessions[currentSession]
-    .slice(-MAX_MEMORY)
-    .map(msg => `${msg.sender === "user" ? "User" : characterRole || "AI"}: ${msg.text}`)
-    .join("\n");
-
-  let baseDelay = Math.min(Math.max(700, (message.length / 5) * 300), 2500);
-  if (characterRole) {
-    switch (characterRole.toLowerCase()) {
-      case "joker": baseDelay *= 0.8; break;
-      case "sherlock": baseDelay *= 1.2; break;
-      case "venom": baseDelay *= 1.0; break;
-    }
-  }
-
-  await new Promise(r => setTimeout(r, baseDelay));
-
-  // ----- GPT-4o API Call -----
-  const apiUrl = `https://api.giftedtech.web.id/api/ai/gpt4o?apikey=gifted&q=${encodeURIComponent(message)}`;
-  let responseText = "[AI failed to respond]";
-
-  try {
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-    responseText = data.reply || "[AI failed to respond]";
-  } catch (err) {
-    console.error("Error fetching AI response:", err);
-  }
-  // -------------------------------
-
-  removeTypingIndicator();
-
-  // Play sound on bot response
-  try {
-    const audio = new Audio('https://www.myinstants.com/media/sounds/fold.mp3'); // Replace with your fold sound URL
-    audio.play().catch(() => {});
-  } catch (err) {
-    console.error("Error playing sound:", err);
-  }
-
-  return responseText;
-}
-
-// Override sendMessage to use GPT-4o API
-const oldSendMessage20 = sendMessage;
-sendMessage = async function() {
-  const text = input.value.trim();
-  if (!text) return;
-
-  appendMessage("user", text);
-  input.value = "";
-
-  const botReply = await aiReplyAPI(text);
-  appendMessage("bot", botReply);
-};
-</script>
- <script>
-/* ===== Session 21: AI Speech Output ===== */
-
-let audioEnabled = true; // toggle audio
-const audioToggleBtn = document.createElement("button");
-audioToggleBtn.innerText = "🔊 Audio On";
-audioToggleBtn.style.marginLeft = "5px";
-audioToggleBtn.style.padding = "5px 10px";
-audioToggleBtn.style.cursor = "pointer";
-audioToggleBtn.style.borderRadius = "5px";
-audioToggleBtn.style.border = "none";
-audioToggleBtn.style.background = "#6f42c1";
-audioToggleBtn.style.color = "white";
-audioToggleBtn.onclick = () => {
-  audioEnabled = !audioEnabled;
-  audioToggleBtn.innerText = audioEnabled ? "🔊 Audio On" : "🔇 Audio Off";
-};
-sessionTabs.appendChild(audioToggleBtn);
-
-// Function to speak text
-function speakText(text) {
-  if (!audioEnabled) return;
-  const utterance = new SpeechSynthesisUtterance(text.replace(/[*_~]/g, '')); // remove markdown
-  // Role-based voice
-  if (characterRole) {
-    switch (characterRole.toLowerCase()) {
-      case "joker":
-        utterance.pitch = 1.5; utterance.rate = 1.2; break;
-      case "sherlock":
-        utterance.pitch = 1.0; utterance.rate = 0.9; break;
-      case "venom":
-        utterance.pitch = 0.7; utterance.rate = 1.1; break;
-    }
-  }
-  window.speechSynthesis.speak(utterance);
-}
-
-// Override appendMessage to include speech for bot
-const oldAppendMessage21 = appendMessage;
-appendMessage = function(sender, text) {
-  oldAppendMessage21(sender, text);
-  if (sender === "bot") speakText(text);
-};
-</script>
-  <script>
-/* ===== Session 22: Message Reactions ===== */
-
-// Reaction emojis
-const reactions = ["❤️", "😂", "😡"];
-
-// Override appendMessage to include reactions
-const oldAppendMessage22 = appendMessage;
-appendMessage = function(sender, text) {
-  const div = document.createElement("div");
-  div.style.margin = "10px 0";
-  div.style.padding = "10px";
-  div.style.borderRadius = "8px";
-  div.style.maxWidth = "70%";
-  div.style.lineHeight = "1.4em";
-  div.style.position = "relative";
-
-  if (sender === "user") {
-    div.style.background = "#2d89ef";
-    div.style.marginLeft = "auto";
-    div.style.textAlign = "right";
-  } else {
-    div.style.background = "#333";
-    div.style.marginRight = "auto";
-  }
-
-  div.innerHTML = text;
-
-  // Add reaction container
-  const reactionContainer = document.createElement("div");
-  reactionContainer.style.display = "flex";
-  reactionContainer.style.gap = "5px";
-  reactionContainer.style.marginTop = "5px";
-
-  reactions.forEach(emoji => {
-    const btn = document.createElement("button");
-    btn.innerText = emoji;
-    btn.style.border = "none";
-    btn.style.background = "transparent";
-    btn.style.cursor = "pointer";
-    btn.onclick = () => {
-      btn.dataset.count = (parseInt(btn.dataset.count || "0") + 1);
-      btn.innerText = `${emoji} ${btn.dataset.count}`;
-    };
-    reactionContainer.appendChild(btn);
-  });
-
-  div.appendChild(reactionContainer);
-
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  // Preserve old functionality for speech/audio if bot
-  if (sender === "bot") speakText(text);
-};
-</script>
-  <script>
-/* ===== Session 23: Message Edit & Delete ===== */
-
-const oldAppendMessage23 = appendMessage;
-appendMessage = function(sender, text) {
-  const div = document.createElement("div");
-  div.style.margin = "10px 0";
-  div.style.padding = "10px";
-  div.style.borderRadius = "8px";
-  div.style.maxWidth = "70%";
-  div.style.lineHeight = "1.4em";
-  div.style.position = "relative";
-
-  if (sender === "user") {
-    div.style.background = "#2d89ef";
-    div.style.marginLeft = "auto";
-    div.style.textAlign = "right";
-  } else {
-    div.style.background = "#333";
-    div.style.marginRight = "auto";
-  }
-
-  div.innerHTML = text;
-
-  // Add edit/delete controls for user messages
-  if (sender === "user") {
-    const controls = document.createElement("div");
-    controls.style.display = "flex";
-    controls.style.gap = "5px";
-    controls.style.marginTop = "5px";
-
-    const editBtn = document.createElement("button");
-    editBtn.innerText = "✏️";
-    editBtn.style.border = "none";
-    editBtn.style.background = "transparent";
-    editBtn.style.cursor = "pointer";
-    editBtn.onclick = () => {
-      const newText = prompt("Edit your message:", text);
-      if (newText !== null) {
-        div.firstChild.nodeValue = newText;
-        chatSessions[currentSession].slice(-1)[0].text = newText; // update last message in session
-        saveAllSessions();
-      }
-    };
-
-    const deleteBtn = document.createElement("button");
-    deleteBtn.innerText = "🗑️";
-    deleteBtn.style.border = "none";
-    deleteBtn.style.background = "transparent";
-    deleteBtn.style.cursor = "pointer";
-    deleteBtn.onclick = () => {
-      chatBox.removeChild(div);
-      chatSessions[currentSession] = chatSessions[currentSession].filter(msg => msg.text !== text);
-      saveAllSessions();
-    };
-
-    controls.appendChild(editBtn);
-    controls.appendChild(deleteBtn);
-    div.appendChild(controls);
-  }
-
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  // Preserve old functionality for speech/audio if bot
-  if (sender === "bot") speakText(text);
-};
-</script>
-  <script>
-/* ===== Session 24: Message Timestamps ===== */
-
-const oldAppendMessage24 = appendMessage;
-appendMessage = function(sender, text) {
-  const timestamp = new Date();
-  const timeStr = timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-  const div = document.createElement("div");
-  div.style.margin = "10px 0";
-  div.style.padding = "10px";
-  div.style.borderRadius = "8px";
-  div.style.maxWidth = "70%";
-  div.style.lineHeight = "1.4em";
-  div.style.position = "relative";
-  div.title = timestamp.toLocaleString(); // hover tooltip
-
-  if (sender === "user") {
-    div.style.background = "#2d89ef";
-    div.style.marginLeft = "auto";
-    div.style.textAlign = "right";
-  } else {
-    div.style.background = "#333";
-    div.style.marginRight = "auto";
-  }
-
-  div.innerHTML = `${text} <span style="font-size:10px; color:#ccc; margin-left:5px;">${timeStr}</span>`;
-
-  // Preserve old functionality for edit/delete, reactions, speech/audio
-  oldAppendMessage24(sender, text);
-
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-};
-</script>
-  <script>
-/* ===== Session 25: Enhanced Typing Indicator ===== */
-
-let typingDiv = null;
-
-function showTypingIndicator() {
-  if (typingDiv) return; // already showing
-  typingDiv = document.createElement("div");
-  typingDiv.innerText = "🤖 AI is typing";
-  typingDiv.style.fontStyle = "italic";
-  typingDiv.style.color = "#bbb";
-  typingDiv.style.margin = "5px 0";
-  typingDiv.style.opacity = "0.8";
-  chatBox.appendChild(typingDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  // Animate dots
-  let dots = 0;
-  typingDiv.interval = setInterval(() => {
-    dots = (dots + 1) % 4;
-    typingDiv.innerText = "🤖 AI is typing" + ".".repeat(dots);
-  }, 500);
-}
-
-function removeTypingIndicator() {
-  if (typingDiv) {
-    clearInterval(typingDiv.interval);
-    chatBox.removeChild(typingDiv);
-    typingDiv = null;
-  }
-}
-</script>
-  <!-- ===== Session 26–30: ElevenLabs TTS & Voice Input Integration ===== -->
-<script>
-let characterRole = localStorage.getItem('characterRole') || "";
-const chatBox = document.getElementById("chatBox");
-const input = document.getElementById("userInput");
-const MAX_MEMORY = 50;
-let chatSessions = [[]];
-let currentSession = 0;
-
-// Typing indicator
-function showTypingIndicator() {
-  const div = document.createElement("div");
-  div.id = "typingIndicator";
-  div.style.margin = "10px 0";
-  div.style.padding = "10px";
-  div.style.borderRadius = "8px";
-  div.style.background = "#555";
-  div.style.color = "#fff";
-  div.innerText = "🤖 Typing...";
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-function removeTypingIndicator() {
-  const el = document.getElementById("typingIndicator");
-  if (el) el.remove();
-}
-
-// Append message
-function appendMessage(sender, text) {
-  const div = document.createElement("div");
-  div.style.margin = "10px 0";
-  div.style.padding = "10px";
-  div.style.borderRadius = "8px";
-  div.style.maxWidth = "70%";
-  div.style.lineHeight = "1.4em";
-
-  if (sender === "user") {
-    div.style.background = "#2d89ef";
-    div.style.marginLeft = "auto";
-    div.style.textAlign = "right";
-  } else {
-    div.style.background = "#333";
-    div.style.marginRight = "auto";
-  }
-
-  div.innerText = text;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  // Store in session memory
-  if (!chatSessions[currentSession]) chatSessions[currentSession] = [];
-  chatSessions[currentSession].push({sender, text});
-}
-
-// ElevenLabs TTS call
-async function playBotVoice(text) {
-  try {
-    const resp = await fetch("https://api.elevenlabs.io/v1/text-to-speech/YOUR_VOICE_ID", {
-      method: "POST",
-      headers: {
-        "xi-api-key": "sk_bd78e0a8be84f60dd48617e466ce55fa5ac0a27fa5c7a832",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({text})
+    const tabs = document.querySelectorAll('.menu-item');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        // For now just log tab switching
+        console.log('Switched to tab:', tab.dataset.tab);
+      });
     });
-    const blob = await resp.blob();
-    const audio = new Audio(URL.createObjectURL(blob));
+
+    const sendBtn = document.getElementById('sendBtn');
+    const input = document.getElementById('userInput');
+    const chatBox = document.getElementById('chatBox');
+
+    function appendMessage(sender, text) {
+      const msg = document.createElement('div');
+      msg.classList.add('message', sender);
+      msg.innerText = text;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    sendBtn.addEventListener('click', () => {
+      const text = input.value.trim();
+      if (!text) return;
+      appendMessage('user', text);
+      input.value = '';
+      // Placeholder bot reply
+      setTimeout(() => appendMessage('bot', '🤖 [Bot response placeholder]'), 600);
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendBtn.click();
+    });
+  </script>
+  <!-- === Session 2: ElevenLabs Voice Integration === -->
+<script>
+/* 
+  This session adds voice capabilities using ElevenLabs TTS API.
+  It allows the bot to speak messages immediately after replying.
+  Voice settings can be adjusted live in the sidebar.
+*/
+
+// Replace this with your ElevenLabs API key
+const ELEVEN_LABS_API_KEY = "sk_bd78e0a8be84f60dd48617e466ce55fa5ac0a27fa5c7a832";
+
+// Default TTS settings
+let selectedVoice = "EXAVITQu4vr4xnSDxMaL"; // Replace with a real voice ID
+let pitch = 1.0;
+let speed = 1.0;
+let volume = 1.0;
+
+// Typing indicator element
+function showTypingIndicator() {
+  const indicator = document.createElement("div");
+  indicator.classList.add("message", "bot");
+  indicator.id = "typingIndicator";
+  indicator.innerText = "🤖 Typing...";
+  chatBox.appendChild(indicator);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const indicator = document.getElementById("typingIndicator");
+  if (indicator) indicator.remove();
+}
+
+// Function to call ElevenLabs TTS API
+async function playBotVoice(message) {
+  try {
+    showTypingIndicator();
+
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": ELEVEN_LABS_API_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          text: message,
+          voice_settings: { stability: 0.75, similarity_boost: 0.75, style: "neutral" }
+        })
+      }
+    );
+
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBlob = new Blob([arrayBuffer], { type: "audio/mpeg" });
+    const audioURL = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioURL);
+    audio.volume = volume;
     audio.play();
-  } catch (e) {
-    console.error("TTS failed:", e);
+
+    removeTypingIndicator();
+  } catch (err) {
+    console.error("TTS Error:", err);
+    removeTypingIndicator();
+    appendMessage("bot", "⚠️ Voice playback failed.");
   }
 }
 
-// sendMessage updated
-async function sendMessage() {
+// Updated sendMessage function with TTS
+sendBtn.addEventListener("click", async () => {
   const text = input.value.trim();
   if (!text) return;
+
   appendMessage("user", text);
   input.value = "";
-  showTypingIndicator();
 
-  // Call ElevenLabs / AI API
-  let botReply = text.split('').reverse().join(''); // fallback if API fails
-  try {
-    // Example: replace with your preferred AI call if available
-    botReply = `🤖 [${characterRole || "AI"} responds]: ` + text.split('').reverse().join('');
-  } catch (e) {
-    console.error("AI failed:", e);
-  }
-
-  removeTypingIndicator();
+  // Placeholder bot reply (replace with AI call later)
+  const botReply = "Hello! I can now speak using ElevenLabs TTS.";
   appendMessage("bot", botReply);
-  playBotVoice(botReply);
-}
 
-// Press Enter to send
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendMessage();
+  // Play TTS for bot reply
+  await playBotVoice(botReply);
 });
 
-// ===== Voice Input / Microphone =====
-const voiceBtn = document.getElementById("voiceBtn");
-let recognizing = false;
-let recognition;
+// Voice settings UI (example, add in sidebar)
+const voiceSettingsHTML = `
+  <div style="padding:10px;">
+    <label>Voice:
+      <select id="voiceSelect">
+        <option value="EXAVITQu4vr4xnSDxMaL">Default</option>
+        <option value="anotherVoiceID">Character 2</option>
+      </select>
+    </label>
+    <br/><br/>
+    <label>Pitch: <span id="pitchVal">1.0</span></label>
+    <input type="range" id="pitchSlider" min="0.5" max="2.0" step="0.05" value="1.0">
+    <br/><br/>
+    <label>Speed: <span id="speedVal">1.0</span></label>
+    <input type="range" id="speedSlider" min="0.5" max="2.0" step="0.05" value="1.0">
+    <br/><br/>
+    <label>Volume: <span id="volumeVal">1.0</span></label>
+    <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1.0">
+  </div>
+`;
 
-if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  recognition.onresult = function(event) {
-    const transcript = event.results[0][0].transcript;
-    input.value = transcript;
-    sendMessage();
-  };
-
-  recognition.onend = function() {
-    recognizing = false;
-    voiceBtn.innerText = '🎤';
-  };
-} else {
-  alert("Speech Recognition not supported in this browser.");
-}
-
-voiceBtn.addEventListener('click', () => {
-  if (!recognition) return;
-  if (recognizing) {
-    recognition.stop();
-    recognizing = false;
-    voiceBtn.innerText = '🎤';
-  } else {
-    recognition.start();
-    recognizing = true;
-    voiceBtn.innerText = '🎙️';
-  }
+const voiceTab = document.querySelector('.menu-item[data-tab="voice"]');
+voiceTab.addEventListener('click', () => {
+  document.getElementById('chatBox').innerHTML = voiceSettingsHTML;
+  
+  // Sliders and select change events
+  document.getElementById('voiceSelect').addEventListener('change', e => selectedVoice = e.target.value);
+  document.getElementById('pitchSlider').addEventListener('input', e => {
+    pitch = parseFloat(e.target.value);
+    document.getElementById('pitchVal').innerText = pitch.toFixed(2);
+  });
+  document.getElementById('speedSlider').addEventListener('input', e => {
+    speed = parseFloat(e.target.value);
+    document.getElementById('speedVal').innerText = speed.toFixed(2);
+  });
+  document.getElementById('volumeSlider').addEventListener('input', e => {
+    volume = parseFloat(e.target.value);
+    document.getElementById('volumeVal').innerText = volume.toFixed(2);
+  });
 });
 </script>
 </body>
