@@ -1104,20 +1104,18 @@ setRole = function() {
 renderQuickReplies();
 </script>
   <script>
-/* ===== Session 20: AI Memory & GPT-4o API Integration ===== */
+/* ===== Session 20: AI Memory, GPT-4o API & Response Sound ===== */
 
 const MAX_MEMORY = 50; // Max messages to remember per session
 
 async function aiReplyAPI(message) {
   showTypingIndicator();
 
-  // Include context messages for AI memory (optional)
   const context = chatSessions[currentSession]
     .slice(-MAX_MEMORY)
     .map(msg => `${msg.sender === "user" ? "User" : characterRole || "AI"}: ${msg.text}`)
     .join("\n");
 
-  // Simulate delay based on message length and role
   let baseDelay = Math.min(Math.max(700, (message.length / 5) * 300), 2500);
   if (characterRole) {
     switch (characterRole.toLowerCase()) {
@@ -1143,6 +1141,15 @@ async function aiReplyAPI(message) {
   // -------------------------------
 
   removeTypingIndicator();
+
+  // Play sound on bot response
+  try {
+    const audio = new Audio('https://www.myinstants.com/media/sounds/fold.mp3'); // Replace with your fold sound URL
+    audio.play().catch(() => {});
+  } catch (err) {
+    console.error("Error playing sound:", err);
+  }
+
   return responseText;
 }
 
@@ -1159,7 +1166,7 @@ sendMessage = async function() {
   appendMessage("bot", botReply);
 };
 </script>
-  <script>
+ <script>
 /* ===== Session 21: AI Speech Output ===== */
 
 let audioEnabled = true; // toggle audio
