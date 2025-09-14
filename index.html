@@ -677,5 +677,431 @@ appendMessage = function(sender, text) {
   }
 };
 </script>
+  <script>
+/* ===== Session 13: Message Edit, Delete & Copy ===== */
+
+function addMessageControls(msgDiv, index) {
+  // Only for user messages
+  if (!msgDiv || !chatSessions[currentSession][index] || chatSessions[currentSession][index].sender !== 'user') return;
+
+  const controls = document.createElement("div");
+  controls.style.display = "inline-flex";
+  controls.style.gap = "5px";
+  controls.style.marginLeft = "10px";
+
+  // Edit button
+  const editBtn = document.createElement("button");
+  editBtn.innerText = "✏️";
+  editBtn.style.cursor = "pointer";
+  editBtn.onclick = () => {
+    const newText = prompt("Edit your message:", chatSessions[currentSession][index].text);
+    if (newText !== null) {
+      chatSessions[currentSession][index].text = newText;
+      msgDiv.innerText = newText;
+      saveAllSessions();
+    }
+  };
+
+  // Delete button
+  const deleteBtn = document.createElement("button");
+  deleteBtn.innerText = "🗑️";
+  deleteBtn.style.cursor = "pointer";
+  deleteBtn.onclick = () => {
+    if (confirm("Delete this message?")) {
+      chatBox.removeChild(msgDiv);
+      chatSessions[currentSession].splice(index, 1);
+      saveAllSessions();
+    }
+  };
+
+  // Copy button
+  const copyBtn = document.createElement("button");
+  copyBtn.innerText = "📋";
+  copyBtn.style.cursor = "pointer";
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(chatSessions[currentSession][index].text)
+      .then(() => alert("Message copied!"))
+      .catch(() => alert("Failed to copy."));
+  };
+
+  controls.appendChild(editBtn);
+  controls.appendChild(deleteBtn);
+  controls.appendChild(copyBtn);
+
+  msgDiv.appendChild(controls);
+}
+
+// Override appendMessage to add controls
+const oldAppendMessage5 = appendMessage;
+appendMessage = function(sender, text) {
+  oldAppendMessage5(sender, text);
+  const index = chatSessions[currentSession].length - 1;
+  const msgDiv = chatBox.lastChild;
+  addMessageControls(msgDiv, index);
+};
+</script>
+  <script>
+/* ===== Session 14: Role-Based AI Styling & Markdown ===== */
+
+function styleBotMessage(text) {
+  let styledText = text;
+
+  // Markdown-like formatting
+  styledText = styledText
+    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+    .replace(/_(.*?)_/g, '<i>$1</i>')
+    .replace(/~~(.*?)~~/g, '<s>$1</s>');
+
+  // Role-specific effects
+  if (characterRole) {
+    switch (characterRole.toLowerCase()) {
+      case "joker":
+        styledText = styledText
+          .split('').map(c => `<span style="color:hsl(${Math.random()*360},100%,70%)">${c}</span>`).join('') 
+          + " 🤡";
+        break;
+      case "sherlock":
+        styledText = `<i>${styledText} 🕵️‍♂️</i>`;
+        break;
+      case "venom":
+        styledText = `<b style="text-transform:uppercase; color:#0f0">${styledText} 🕷️</b>`;
+        break;
+      default:
+        styledText += " 🤖";
+    }
+  }
+
+  return styledText;
+}
+
+// Override appendMessage for AI styling
+const oldAppendMessage6 = appendMessage;
+appendMessage = function(sender, text) {
+  if (sender === "bot") {
+    text = styleBotMessage(text);
+    const div = document.createElement("div");
+    div.style.margin = "10px 0";
+    div.style.padding = "10px";
+    div.style.borderRadius = "8px";
+    div.style.maxWidth = "70%";
+    div.style.lineHeight = "1.4em";
+    div.style.background = "#333";
+    div.style.marginRight = "auto";
+    div.innerHTML = text; // use innerHTML for styled content
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return;
+  }
+  oldAppendMessage6(sender, text);
+};
+</script>
+  <script>
+/* ===== Session 15: AI Typing Simulation ===== */
+
+const typingIndicator = document.createElement("div");
+typingIndicator.innerText = "🤖 is typing…";
+typingIndicator.style.fontStyle = "italic";
+typingIndicator.style.color = "#bbb";
+typingIndicator.style.margin = "10px 0";
+
+function showTypingIndicator() {
+  chatBox.appendChild(typingIndicator);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  if (chatBox.contains(typingIndicator)) {
+    chatBox.removeChild(typingIndicator);
+  }
+}
+
+// Override aiReplyAPI to simulate typing
+async function aiReplyAPI(message) {
+  showTypingIndicator();
+
+  // Base delay calculation
+  let baseDelay = Math.min(Math.max(700, (message.length / 5) * 300), 2500);
+
+  // Role-specific speed adjustments
+  if (characterRole) {
+    switch (characterRole.toLowerCase()) {
+      case "joker":
+        baseDelay *= 0.8; // faster, chaotic
+        break;
+      case "sherlock":
+        baseDelay *= 1.2; // slower, thoughtful
+        break;
+      case "venom":
+        baseDelay *= 1.0; // standard speed
+        break;
+    }
+  }
+
+  await new Promise(r => setTimeout(r, baseDelay));
+  removeTypingIndicator();
+
+  // Generate AI response (simple placeholder logic)
+  let response = characterRole
+    ? `[${characterRole} replies]: ${message.split('').reverse().join('')}`
+    : `🤖 [AI Response]: ${message}`;
+
+  return response;
+}
+
+// Update sendMessage to use aiReplyAPI with typing
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  appendMessage("user", text);
+  input.value = "";
+
+  const botReply = await aiReplyAPI(text);
+  appendMessage("bot", botReply);
+}
+</script>
+  <script>
+/* ===== Session 16: Multi-Session Chat Management ===== */
+
+let chatSessions = [];
+let currentSession = 0;
+
+// Load saved sessions
+window.onload = () => {
+  const saved = localStorage.getItem("chatSessions");
+  if (saved) chatSessions = JSON.parse(saved);
+  if (!chatSessions.length) chatSessions.push([]);
+  currentSession = 0;
+  renderSession();
+};
+
+// Save all sessions
+function saveAllSessions() {
+  localStorage.setItem("chatSessions", JSON.stringify(chatSessions));
+}
+
+// Render messages for current session
+function renderSession() {
+  chatBox.innerHTML = "";
+  chatSessions[currentSession].forEach(msg => appendMessage(msg.sender, msg.text));
+}
+
+// Start new session
+function newSession() {
+  chatSessions.push([]);
+  currentSession = chatSessions.length - 1;
+  renderSession();
+}
+
+// Switch session by index
+function switchSession(index) {
+  if (index >= 0 && index < chatSessions.length) {
+    currentSession = index;
+    renderSession();
+  }
+}
+
+// Override appendMessage to save to session
+const oldAppendMessage7 = appendMessage;
+appendMessage = function(sender, text) {
+  // Save message in session
+  chatSessions[currentSession].push({ sender, text });
+  saveAllSessions();
+
+  oldAppendMessage7(sender, text);
+};
+</script>
+  <script>
+/* ===== Session 17: Chat UI & Session Tabs ===== */
+
+// Container for session tabs
+const sessionTabs = document.createElement("div");
+sessionTabs.style.display = "flex";
+sessionTabs.style.gap = "10px";
+sessionTabs.style.padding = "5px 10px";
+sessionTabs.style.background = "#222";
+sessionTabs.style.borderBottom = "1px solid #333";
+document.body.insertBefore(sessionTabs, chatBox);
+
+// Function to render session tabs
+function renderSessionTabs() {
+  sessionTabs.innerHTML = "";
+  chatSessions.forEach((session, idx) => {
+    const tab = document.createElement("button");
+    tab.innerText = session.label || `Session ${idx + 1}`;
+    tab.style.padding = "5px 10px";
+    tab.style.cursor = "pointer";
+    tab.style.borderRadius = "5px";
+    tab.style.border = "none";
+    tab.style.background = idx === currentSession ? "#2d89ef" : "#444";
+    tab.style.color = "white";
+
+    tab.onclick = () => switchSession(idx);
+    sessionTabs.appendChild(tab);
+  });
+
+  // New session button
+  const newTab = document.createElement("button");
+  newTab.innerText = "+ New";
+  newTab.style.padding = "5px 10px";
+  newTab.style.cursor = "pointer";
+  newTab.style.borderRadius = "5px";
+  newTab.style.border = "none";
+  newTab.style.background = "#28a745";
+  newTab.style.color = "white";
+  newTab.onclick = () => {
+    chatSessions.push([]);
+    chatSessions[chatSessions.length-1].label = `Session ${chatSessions.length}`;
+    currentSession = chatSessions.length - 1;
+    renderSessionTabs();
+    renderSession();
+    saveAllSessions();
+  };
+  sessionTabs.appendChild(newTab);
+}
+
+// Override switchSession to update tabs
+const oldSwitchSession = switchSession;
+switchSession = function(idx) {
+  oldSwitchSession(idx);
+  renderSessionTabs();
+};
+
+// Initial render
+renderSessionTabs();
+</script>
+  <script>
+/* ===== Session 18: Chat Export & Import ===== */
+
+// Export current session
+function exportSession() {
+  const sessionData = chatSessions[currentSession];
+  if (!sessionData || !sessionData.length) {
+    alert("No messages to export!");
+    return;
+  }
+  const blob = new Blob([JSON.stringify(sessionData, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = (chatSessions[currentSession].label || `session_${currentSession+1}`) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// Import session from file
+function importSession(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (Array.isArray(imported)) {
+        chatSessions.push(imported);
+        currentSession = chatSessions.length - 1;
+        renderSessionTabs();
+        renderSession();
+        saveAllSessions();
+        alert("Session imported successfully!");
+      } else {
+        alert("Invalid session file.");
+      }
+    } catch (err) {
+      alert("Error parsing session file.");
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Add buttons for export/import
+const exportBtn = document.createElement("button");
+exportBtn.innerText = "💾 Export";
+exportBtn.style.marginLeft = "10px";
+exportBtn.style.padding = "5px 10px";
+exportBtn.style.cursor = "pointer";
+exportBtn.style.borderRadius = "5px";
+exportBtn.style.border = "none";
+exportBtn.style.background = "#ffc107";
+exportBtn.style.color = "#000";
+exportBtn.onclick = exportSession;
+sessionTabs.appendChild(exportBtn);
+
+const importInput = document.createElement("input");
+importInput.type = "file";
+importInput.accept = ".json";
+importInput.style.display = "none";
+importInput.onchange = importSession;
+
+const importBtn = document.createElement("button");
+importBtn.innerText = "📂 Import";
+importBtn.style.marginLeft = "5px";
+importBtn.style.padding = "5px 10px";
+importBtn.style.cursor = "pointer";
+importBtn.style.borderRadius = "5px";
+importBtn.style.border = "none";
+importBtn.style.background = "#17a2b8";
+importBtn.style.color = "white";
+importBtn.onclick = () => importInput.click();
+sessionTabs.appendChild(importBtn);
+
+document.body.appendChild(importInput);
+</script>
+  <script>
+/* ===== Session 19: Quick-Reply Buttons ===== */
+
+// Container for quick replies
+const quickReplyContainer = document.createElement("div");
+quickReplyContainer.style.display = "flex";
+quickReplyContainer.style.gap = "10px";
+quickReplyContainer.style.flexWrap = "wrap";
+quickReplyContainer.style.padding = "10px";
+quickReplyContainer.style.background = "#1e1e1e";
+document.body.insertBefore(quickReplyContainer, inputBar);
+
+// Define role-based quick replies
+const quickReplies = {
+  joker: ["Why so serious?", "Let's cause chaos 😂", "Do you want a joke?"],
+  sherlock: ["Elementary.", "I deduce that...", "Interesting observation."],
+  venom: ["We are Venom.", "Feed... on this.", "You cannot escape."],
+  default: ["Hello!", "How are you?", "Tell me more."]
+};
+
+// Render quick replies for current role
+function renderQuickReplies() {
+  quickReplyContainer.innerHTML = "";
+  const replies = characterRole && quickReplies[characterRole.toLowerCase()] 
+    ? quickReplies[characterRole.toLowerCase()] 
+    : quickReplies.default;
+
+  replies.forEach(reply => {
+    const btn = document.createElement("button");
+    btn.innerText = reply;
+    btn.style.padding = "5px 10px";
+    btn.style.border = "none";
+    btn.style.borderRadius = "5px";
+    btn.style.background = "#2d89ef";
+    btn.style.color = "white";
+    btn.style.cursor = "pointer";
+    btn.onclick = () => {
+      input.value = reply;
+      sendMessage();
+    };
+    quickReplyContainer.appendChild(btn);
+  });
+}
+
+// Update quick replies whenever role changes
+const oldSetRole = setRole;
+setRole = function() {
+  oldSetRole();
+  renderQuickReplies();
+};
+
+// Initial render
+renderQuickReplies();
+</script>
 </body>
 </html>
