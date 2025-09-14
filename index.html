@@ -1103,5 +1103,291 @@ setRole = function() {
 // Initial render
 renderQuickReplies();
 </script>
+  <script>
+/* ===== Session 20: AI Memory & Context Tracking ===== */
+
+const MAX_MEMORY = 50; // Max messages to remember per session
+
+async function aiReplyAPI(message) {
+  showTypingIndicator();
+
+  // Include context messages
+  const context = chatSessions[currentSession]
+    .slice(-MAX_MEMORY)
+    .map(msg => `${msg.sender === "user" ? "User" : characterRole || "AI"}: ${msg.text}`)
+    .join("\n");
+
+  // Simulate delay based on message length
+  let baseDelay = Math.min(Math.max(700, (message.length / 5) * 300), 2500);
+  if (characterRole) {
+    switch (characterRole.toLowerCase()) {
+      case "joker": baseDelay *= 0.8; break;
+      case "sherlock": baseDelay *= 1.2; break;
+      case "venom": baseDelay *= 1.0; break;
+    }
+  }
+
+  await new Promise(r => setTimeout(r, baseDelay));
+  removeTypingIndicator();
+
+  // Placeholder AI logic using context
+  let response;
+  if (characterRole) {
+    response = `🤖 [${characterRole} remembers]: ` + message.split('').reverse().join('');
+  } else {
+    response = `🤖 [AI Response with context]: ${message}`;
+  }
+
+  return response;
+}
+
+// Ensure sendMessage uses updated aiReplyAPI
+const oldSendMessage20 = sendMessage;
+sendMessage = async function() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  appendMessage("user", text);
+  input.value = "";
+
+  const botReply = await aiReplyAPI(text);
+  appendMessage("bot", botReply);
+};
+</script>
+  <script>
+/* ===== Session 21: AI Speech Output ===== */
+
+let audioEnabled = true; // toggle audio
+const audioToggleBtn = document.createElement("button");
+audioToggleBtn.innerText = "🔊 Audio On";
+audioToggleBtn.style.marginLeft = "5px";
+audioToggleBtn.style.padding = "5px 10px";
+audioToggleBtn.style.cursor = "pointer";
+audioToggleBtn.style.borderRadius = "5px";
+audioToggleBtn.style.border = "none";
+audioToggleBtn.style.background = "#6f42c1";
+audioToggleBtn.style.color = "white";
+audioToggleBtn.onclick = () => {
+  audioEnabled = !audioEnabled;
+  audioToggleBtn.innerText = audioEnabled ? "🔊 Audio On" : "🔇 Audio Off";
+};
+sessionTabs.appendChild(audioToggleBtn);
+
+// Function to speak text
+function speakText(text) {
+  if (!audioEnabled) return;
+  const utterance = new SpeechSynthesisUtterance(text.replace(/[*_~]/g, '')); // remove markdown
+  // Role-based voice
+  if (characterRole) {
+    switch (characterRole.toLowerCase()) {
+      case "joker":
+        utterance.pitch = 1.5; utterance.rate = 1.2; break;
+      case "sherlock":
+        utterance.pitch = 1.0; utterance.rate = 0.9; break;
+      case "venom":
+        utterance.pitch = 0.7; utterance.rate = 1.1; break;
+    }
+  }
+  window.speechSynthesis.speak(utterance);
+}
+
+// Override appendMessage to include speech for bot
+const oldAppendMessage21 = appendMessage;
+appendMessage = function(sender, text) {
+  oldAppendMessage21(sender, text);
+  if (sender === "bot") speakText(text);
+};
+</script>
+  <script>
+/* ===== Session 22: Message Reactions ===== */
+
+// Reaction emojis
+const reactions = ["❤️", "😂", "😡"];
+
+// Override appendMessage to include reactions
+const oldAppendMessage22 = appendMessage;
+appendMessage = function(sender, text) {
+  const div = document.createElement("div");
+  div.style.margin = "10px 0";
+  div.style.padding = "10px";
+  div.style.borderRadius = "8px";
+  div.style.maxWidth = "70%";
+  div.style.lineHeight = "1.4em";
+  div.style.position = "relative";
+
+  if (sender === "user") {
+    div.style.background = "#2d89ef";
+    div.style.marginLeft = "auto";
+    div.style.textAlign = "right";
+  } else {
+    div.style.background = "#333";
+    div.style.marginRight = "auto";
+  }
+
+  div.innerHTML = text;
+
+  // Add reaction container
+  const reactionContainer = document.createElement("div");
+  reactionContainer.style.display = "flex";
+  reactionContainer.style.gap = "5px";
+  reactionContainer.style.marginTop = "5px";
+
+  reactions.forEach(emoji => {
+    const btn = document.createElement("button");
+    btn.innerText = emoji;
+    btn.style.border = "none";
+    btn.style.background = "transparent";
+    btn.style.cursor = "pointer";
+    btn.onclick = () => {
+      btn.dataset.count = (parseInt(btn.dataset.count || "0") + 1);
+      btn.innerText = `${emoji} ${btn.dataset.count}`;
+    };
+    reactionContainer.appendChild(btn);
+  });
+
+  div.appendChild(reactionContainer);
+
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // Preserve old functionality for speech/audio if bot
+  if (sender === "bot") speakText(text);
+};
+</script>
+  <script>
+/* ===== Session 23: Message Edit & Delete ===== */
+
+const oldAppendMessage23 = appendMessage;
+appendMessage = function(sender, text) {
+  const div = document.createElement("div");
+  div.style.margin = "10px 0";
+  div.style.padding = "10px";
+  div.style.borderRadius = "8px";
+  div.style.maxWidth = "70%";
+  div.style.lineHeight = "1.4em";
+  div.style.position = "relative";
+
+  if (sender === "user") {
+    div.style.background = "#2d89ef";
+    div.style.marginLeft = "auto";
+    div.style.textAlign = "right";
+  } else {
+    div.style.background = "#333";
+    div.style.marginRight = "auto";
+  }
+
+  div.innerHTML = text;
+
+  // Add edit/delete controls for user messages
+  if (sender === "user") {
+    const controls = document.createElement("div");
+    controls.style.display = "flex";
+    controls.style.gap = "5px";
+    controls.style.marginTop = "5px";
+
+    const editBtn = document.createElement("button");
+    editBtn.innerText = "✏️";
+    editBtn.style.border = "none";
+    editBtn.style.background = "transparent";
+    editBtn.style.cursor = "pointer";
+    editBtn.onclick = () => {
+      const newText = prompt("Edit your message:", text);
+      if (newText !== null) {
+        div.firstChild.nodeValue = newText;
+        chatSessions[currentSession].slice(-1)[0].text = newText; // update last message in session
+        saveAllSessions();
+      }
+    };
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.innerText = "🗑️";
+    deleteBtn.style.border = "none";
+    deleteBtn.style.background = "transparent";
+    deleteBtn.style.cursor = "pointer";
+    deleteBtn.onclick = () => {
+      chatBox.removeChild(div);
+      chatSessions[currentSession] = chatSessions[currentSession].filter(msg => msg.text !== text);
+      saveAllSessions();
+    };
+
+    controls.appendChild(editBtn);
+    controls.appendChild(deleteBtn);
+    div.appendChild(controls);
+  }
+
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // Preserve old functionality for speech/audio if bot
+  if (sender === "bot") speakText(text);
+};
+</script>
+  <script>
+/* ===== Session 24: Message Timestamps ===== */
+
+const oldAppendMessage24 = appendMessage;
+appendMessage = function(sender, text) {
+  const timestamp = new Date();
+  const timeStr = timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+  const div = document.createElement("div");
+  div.style.margin = "10px 0";
+  div.style.padding = "10px";
+  div.style.borderRadius = "8px";
+  div.style.maxWidth = "70%";
+  div.style.lineHeight = "1.4em";
+  div.style.position = "relative";
+  div.title = timestamp.toLocaleString(); // hover tooltip
+
+  if (sender === "user") {
+    div.style.background = "#2d89ef";
+    div.style.marginLeft = "auto";
+    div.style.textAlign = "right";
+  } else {
+    div.style.background = "#333";
+    div.style.marginRight = "auto";
+  }
+
+  div.innerHTML = `${text} <span style="font-size:10px; color:#ccc; margin-left:5px;">${timeStr}</span>`;
+
+  // Preserve old functionality for edit/delete, reactions, speech/audio
+  oldAppendMessage24(sender, text);
+
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+};
+</script>
+  <script>
+/* ===== Session 25: Enhanced Typing Indicator ===== */
+
+let typingDiv = null;
+
+function showTypingIndicator() {
+  if (typingDiv) return; // already showing
+  typingDiv = document.createElement("div");
+  typingDiv.innerText = "🤖 AI is typing";
+  typingDiv.style.fontStyle = "italic";
+  typingDiv.style.color = "#bbb";
+  typingDiv.style.margin = "5px 0";
+  typingDiv.style.opacity = "0.8";
+  chatBox.appendChild(typingDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // Animate dots
+  let dots = 0;
+  typingDiv.interval = setInterval(() => {
+    dots = (dots + 1) % 4;
+    typingDiv.innerText = "🤖 AI is typing" + ".".repeat(dots);
+  }, 500);
+}
+
+function removeTypingIndicator() {
+  if (typingDiv) {
+    clearInterval(typingDiv.interval);
+    chatBox.removeChild(typingDiv);
+    typingDiv = null;
+  }
+}
+</script>
 </body>
 </html>
